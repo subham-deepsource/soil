@@ -10,7 +10,7 @@ type SinkState struct {
 	dirty         map[string]string
 	namespaces    []string
 	registrations map[string]map[string]*manifest.Pod
-	mu            *sync.Mutex
+	mu            sync.Mutex
 }
 
 func NewSinkState(namespaces []string, dirty map[string]string) (s *SinkState) {
@@ -18,7 +18,6 @@ func NewSinkState(namespaces []string, dirty map[string]string) (s *SinkState) {
 		dirty:         dirty,
 		namespaces:    namespaces,
 		registrations: map[string]map[string]*manifest.Pod{},
-		mu:            &sync.Mutex{},
 	}
 	for _, n := range namespaces {
 		s.registrations[n] = map[string]*manifest.Pod{}
@@ -63,7 +62,7 @@ func (s *SinkState) SyncNamespace(namespace string, pods manifest.Registry) (cha
 	// evaluate deletions from dirty stale
 	for name, ns := range s.dirty {
 		if ns == namespace {
-			if _, ok := ingest[name]; !ok {
+			if _, ok = ingest[name]; !ok {
 				delete(s.dirty, name)
 				changes[name] = nil
 			}
@@ -85,7 +84,6 @@ func (s *SinkState) SyncNamespace(namespace string, pods manifest.Registry) (cha
 			delete(changes, name)
 		}
 	}
-
 	return
 }
 

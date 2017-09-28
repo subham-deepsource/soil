@@ -6,57 +6,41 @@ import (
 	"github.com/akaspin/soil/agent/allocation"
 	"github.com/akaspin/soil/manifest"
 	"github.com/akaspin/supervisor"
-	"sync"
 )
 
-type RegistrySink struct {
+type Sink struct {
 	*supervisor.Control
 	log *logx.Log
 
 	evaluator *Evaluator
 	manager   *Manager
 	state     *SinkState
-
-	mu *sync.Mutex
 }
 
-func NewRegistrySink(ctx context.Context, log *logx.Log, evaluator *Evaluator, manager *Manager) (r *RegistrySink) {
-	r = &RegistrySink{
+func NewSink(ctx context.Context, log *logx.Log, evaluator *Evaluator, manager *Manager) (r *Sink) {
+	r = &Sink{
 		Control:   supervisor.NewControl(ctx),
 		log:       log.GetLog("scheduler", "sink", "pods"),
 		evaluator: evaluator,
 		manager:   manager,
-		mu:        &sync.Mutex{},
 	}
 	return
 }
 
-func (s *RegistrySink) Open() (err error) {
-	s.log.Debugf("open")
+func (s *Sink) Open() (err error) {
 	dirty := map[string]string{}
 	for _, recovered := range s.evaluator.List() {
 		dirty[recovered.Name] = recovered.Namespace
 	}
 	s.state = NewSinkState([]string{"private", "public"}, dirty)
 	err = s.Control.Open()
-	return
-}
-
-func (s *RegistrySink) Close() error {
-	s.log.Debug("close")
-	return s.Control.Close()
-}
-
-func (s *RegistrySink) Wait() (err error) {
-	err = s.Control.Wait()
+	s.log.Debugf("open")
 	return
 }
 
 // SyncNamespace scheduler pods. Called by registry on initialization.
-func (s *RegistrySink) ConsumeRegistry(namespace string, pods manifest.Registry) {
+func (s *Sink) ConsumeRegistry(namespace string, pods manifest.Registry) {
 	s.log.Debugf("begin: %s", namespace)
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	changes := s.state.SyncNamespace(namespace, pods)
 	for name, pod := range changes {
@@ -66,18 +50,18 @@ func (s *RegistrySink) ConsumeRegistry(namespace string, pods manifest.Registry)
 	return
 }
 
-func (s *RegistrySink) submitToEvaluator(name string, pod *manifest.Pod) (err error) {
+func (s *Sink) submitToEvaluator(name string, pod *manifest.Pod) (err error) {
 	if pod == nil {
 		go s.manager.DeregisterResource(name, func() {
 			s.evaluator.Submit(name, nil)
 		})
 		return
 	}
-	s.manager.RegisterResource(name, pod.Namespace, pod.Constraint, func(reason error, env map[string]string, mark uint64) {
+	s.manager.RegisterResource(name, pod.Namespace, pod.GetConstraint(), func(reason error, env map[string]string, mark uint64) {
 		s.log.Debugf("received %v from manager for %s", reason, name)
 		var alloc *allocation.Pod
 		if pod != nil && reason == nil {
-			if alloc, err = allocation.NewFromManifest(pod, env); err != nil {
+			if alloc, err = allocation.NewFromManifest(pod, allocation.DefaultSystemDPaths(), env); err != nil {
 				return
 			}
 		}

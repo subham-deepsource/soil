@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func TestSink(t *testing.T) {
+func TestRegistrySink(t *testing.T) {
 	pods := manifest.Registry{
 		{
 			Namespace: "private",
@@ -93,7 +93,7 @@ WantedBy=default.target
 	systemSource := bus.NewFlatMap(ctx, log, true, "system", manager)
 
 	evaluator := scheduler.NewEvaluator(ctx, log)
-	sink := scheduler.NewRegistrySink(ctx, logx.GetLog("test"), evaluator, manager)
+	sink := scheduler.NewSink(ctx, logx.GetLog("test"), evaluator, manager)
 
 	sv := supervisor.NewChain(ctx,
 		supervisor.NewChain(ctx,
@@ -123,7 +123,7 @@ WantedBy=default.target
 		assert.Equal(t, map[string]*allocation.Header{
 			"pod-2": {
 				Name:      "pod-2",
-				PodMark:   11887013412892795164,
+				PodMark:   pods[0].Mark(),
 				AgentMark: 3929574824791171030,
 				Namespace: "private",
 			},
@@ -140,13 +140,13 @@ WantedBy=default.target
 		assert.Equal(t, map[string]*allocation.Header{
 			"pod-2": {
 				Name:      "pod-2",
-				PodMark:   11887013412892795164,
+				PodMark:   pods[0].Mark(),
 				AgentMark: 1419029487994004442,
 				Namespace: "private",
 			},
 			"pod-3": {
 				Name:      "pod-3",
-				PodMark:   7050032075987695032,
+				PodMark:   pods[1].Mark(),
 				AgentMark: 1419029487994004442,
 				Namespace: "private",
 			},
