@@ -5,9 +5,9 @@ import (
 )
 
 // Allocations state
-type State []*Pod
+type Recovery []*Pod
 
-func (s *State) Discover(systemPaths SystemPaths, discoveryFunc func() ([]string, error)) (err error) {
+func (s *Recovery) FromFilesystem(systemPaths SystemPaths, discoveryFunc func() ([]string, error)) (err error) {
 	paths, err := discoveryFunc()
 	var failures []error
 	for _, path := range paths {
@@ -22,10 +22,9 @@ func (s *State) Discover(systemPaths SystemPaths, discoveryFunc func() ([]string
 		err = fmt.Errorf("%v", failures)
 	}
 	return
-	return
 }
 
-func (s State) Find(name string) (res *Header) {
+func (s Recovery) Find(name string) (res *Header) {
 	for _, alloc := range s {
 		if alloc.Name == name {
 			res = alloc.Header
