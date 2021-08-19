@@ -3,9 +3,10 @@ package allocation
 import (
 	"bytes"
 	"fmt"
+	"strings"
+
 	"github.com/da-moon/soil/manifest"
 	"github.com/mitchellh/hashstructure"
-	"strings"
 )
 
 const (
@@ -91,7 +92,7 @@ func (p *Pod) FromManifest(m *manifest.Pod, env map[string]string) (err error) {
 		p.Blobs = append(p.Blobs, ab)
 		fileHash, _ := hashstructure.Hash(ab.Source, nil)
 		fileHashes1[fmt.Sprintf(
-			"blob.%s", strings.Replace(strings.Trim(ab.Name, "/"), "/", "-", -1))] = fmt.Sprintf("%d", fileHash)
+			"blob.%s", strings.ReplaceAll(strings.Trim(ab.Name, "/"), "/", "-"))] = fmt.Sprintf("%d", fileHash)
 	}
 	e = e.Merge(fileHashes1)
 
