@@ -49,7 +49,10 @@ config:
       - apt-utils
       - sudo
       - bash-completion
+      - cmake
+      - pkg-config
       - build-essential
+      - libssl-dev
       - apt-transport-https
       - gnupg2
       - gnupg-agent
@@ -61,6 +64,11 @@ config:
       - docker-ce
       - docker-ce-cli
       - containerd.io
+      - fontconfig
+      - xfonts-utils
+      - software-properties-common
+      - nodejs
+      - npm
     groups:
         - docker
     system_info:
