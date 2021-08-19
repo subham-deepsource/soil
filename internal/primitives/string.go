@@ -108,7 +108,7 @@ func UpperFirst(s string) string {
 
 // ToSnakeCase converts a string to snake_case
 func ToSnakeCase(s string) string {
-	s = strings.ReplaceAll(strings.Replace(s, "-", "_", -1), " ", "_")
+	s = strings.ReplaceAll(strings.ReplaceAll(s, "-", "_"), " ", "_")
 	runes := []rune(s)
 	length := len(runes)
 	var out []rune
@@ -146,7 +146,7 @@ func ToPascalCase(s string) string {
 
 // ToKebabCase converts a string to kebab-case
 func ToKebabCase(s string) string {
-	s = strings.ReplaceAll(strings.Replace(s, "_", "-", -1), " ", "-")
+	s = strings.ReplaceAll(strings.ReplaceAll(s, "_", "-"), " ", "-")
 	runes := []rune(s)
 	length := len(runes)
 	var out []rune
