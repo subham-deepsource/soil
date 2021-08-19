@@ -35,4 +35,3 @@ pod "second" {
   EOF
   }
 }
-

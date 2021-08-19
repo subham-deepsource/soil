@@ -1,8 +1,8 @@
 package scheduler
 
 import (
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/manifest"
 )
 
 // ConstraintBinder can bind and unbind specific function to specific callback

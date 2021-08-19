@@ -1,9 +1,10 @@
+//go:build ide || test_systemd
 // +build ide test_systemd
 
 package fixture_test
 
 import (
-	"github.com/akaspin/soil/fixture"
+	"github.com/da-moon/soil/fixture"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -13,10 +14,10 @@ func TestCreateUnit(t *testing.T) {
 	# {{.test}}
 	[Unit]
 	Description=%p
-	
+
 	[Service]
 	ExecStart=/usr/bin/sleep inf
-	
+
 	[Install]
 	WantedBy=multi-user.target
 	`

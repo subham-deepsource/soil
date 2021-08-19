@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/manifest"
 )
 
 type Evaluator interface {

@@ -1,9 +1,10 @@
+//go:build ide || (test_cluster && !test_systemd)
 // +build ide test_cluster,!test_systemd
 
 package fixture_test
 
 import (
-	"github.com/akaspin/soil/fixture"
+	"github.com/da-moon/soil/fixture"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

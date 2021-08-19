@@ -6,7 +6,7 @@ weight: 20
 
 # Resources
 
-All available resources must be configured by provider stansa. Once provider is defined pods can request resources. 
+All available resources must be configured by provider stansa. Once provider is defined pods can request resources.
 
 ```hcl
 pod "1" {
@@ -26,9 +26,9 @@ pod "2" {
     EOF
   }
 }
-``` 
+```
 
-Providers should be defined as `"kind" "name"`. Resources should reference provider as `<pod>.<provider-name>`. 
+Providers should be defined as `"kind" "name"`. Resources should reference provider as `<pod>.<provider-name>`.
 
 ## Range
 
@@ -45,7 +45,7 @@ pod "example" {
     source = <<EOF
     [Service]
     ExecStart=/usr/bin/docker run --rm --name=%p \
-      -p ${resource.example.port.80}:80 alpine httpd -f 
+      -p ${resource.example.port.80}:80 alpine httpd -f
     EOF
   }
 }
@@ -53,12 +53,12 @@ pod "example" {
 
 ### Configuration
 
-`min` `(uint32: 0)` 
+`min` `(uint32: 0)`
 : Minimum value in range.
 
-`max` `(uint32: 4294967295)` 
+`max` `(uint32: 4294967295)`
 : Minimum value in range.
- 
+
 ### Values
 
 `allocated` `(true|false)`

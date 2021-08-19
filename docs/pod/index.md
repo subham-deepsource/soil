@@ -30,13 +30,13 @@ pod "my-pod" {
       [Unit]
       # ${resource.my-pod.8080.value}
       Description=%p with ${blob.etc-my-pod-sample}
-      
+
       [Service]
       ExecStartPre=/usr/bin/cat /etc/my-pod/sample
       ExecStart=/usr/bin/sleep inf
     EOF
   }
-  
+
   blob "/etc/my-pod/sample" {
     leave = false
     permissions = 0644
@@ -49,10 +49,10 @@ pod "my-pod" {
 
 All properties is optional. In fact you can define empty pod without anything.
 
-`runtime` `(bool: true)` 
+`runtime` `(bool: true)`
 : Defines where pod units will be deployed: in runtime `/run/systemd/system` or local `/etc/systemd/system`. This setting also tells where to activate each unit in pod.
 
-`target` `(string: "multi-user.target")` 
+`target` `(string: "multi-user.target")`
 : [Pod unit]({{site.baseurl}}/pod/internals) target.
 
 `constraint` `(map: {})`
@@ -64,7 +64,7 @@ All properties is optional. In fact you can define empty pod without anything.
 `resource` `(map: {})`
 : Resource requests.
 
-`unit` `(map: {})` 
+`unit` `(map: {})`
 : Units definitions.
 
 `blob` `(map: {})`
@@ -72,14 +72,14 @@ All properties is optional. In fact you can define empty pod without anything.
 
 ## Units
 
-All units in pod are defined by `pod` stansa. Units can be added or removed in existent pod on update. 
+All units in pod are defined by `pod` stansa. Units can be added or removed in existent pod on update.
 
 ```hcl
 unit "my-unit-1.service" {
   source = <<EOF
     [Unit]
     Description=%p with ${blob.etc-my-pod-sample}
-      
+
     [Service]
     ExecStartPre=/usr/bin/cat /etc/my-pod/sample
     ExecStart=/usr/bin/sleep inf
@@ -91,21 +91,21 @@ unit "my-unit-1.service" {
 }
 ```
 
-`source` `(string: "")` 
+`source` `(string: "")`
 : SystemD unit source. Can be [interpolated]({{site.baseurl}}/pod/interpolation). Soil agent will write interpolated source to disk only if it differs from existent.
 
-`permanent` `(bool: false)` 
+`permanent` `(bool: false)`
 : Soil agent will enable unit in SystemD. Enabling this setting assumes what `[Install]` section is present in unit source.
 
-`create` `(string: "start")` 
+`create` `(string: "start")`
 : Systemd command to execute on unit creation.
 
-`update` `(string: "restart")` 
+`update` `(string: "restart")`
 : Systemd command to execute on unit update. This command will be triggered only if unit is exists before pod update and interpolated source from pending pod manifest is differs from existent.
-  
+
 `destroy` `(string: "stop")`
 : Systemd command to execute on unit destroy.
- 
+
 Available commands for `create`, `update` and `destroy` are: `start`, `stop`, `restart`, `reload`, `try-restart`, `reload-or-restart`, `reload-or-try-restart`. Use empty value `("")` to disable command execution.
 
 
@@ -129,7 +129,7 @@ blob "/etc/my-pod/sample" {
 `permissions` `(int: 0644)`
 : BLOB permissions. All files are deployed with Soil process owner.
 
-`leave` `(bool: false)` 
+`leave` `(bool: false)`
 : Leave BLOB on disk after destroy.
 
 ## Resources

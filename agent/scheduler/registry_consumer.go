@@ -1,6 +1,6 @@
 package scheduler
 
-import "github.com/akaspin/soil/manifest"
+import "github.com/da-moon/soil/manifest"
 
 type RegistryConsumer interface {
 	ConsumeRegistry(payload manifest.PodSlice)

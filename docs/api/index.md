@@ -25,7 +25,7 @@ $ curl http://127.0.0.1:7654/v1/agent/ping
 The conventions used in the API documentation do not list a port and use the standard address `127.0.0.1`. Be sure to replace this with your Soil Agent URL when using the examples.
 
 ## Formatted JSON Output
-   
+
 By default, the output of all HTTP API requests is minimized JSON. If the client passes `pretty` on the query string, formatted JSON will be returned.
 
 ## Proxying and redirects
@@ -41,5 +41,3 @@ To redirect request to another reachable node add `redirect` parameter to query:
 ```shell
 $ curl http://127.0.0.1:7654/v1/agent/ping?node=node-1&redirect
 ```
-
-

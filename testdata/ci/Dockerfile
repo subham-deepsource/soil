@@ -31,4 +31,4 @@ VOLUME /go
 #VOLUME /run/soil
 #VOLUME /var/lib/soil
 
-# docker run -d --name=sdt --privileged -v ${PWD}:/go/src/github.com/akaspin/soil test:1 /bin/systemd --system
+# docker run -d --name=sdt --privileged -v ${PWD}:/go/src/github.com/da-moon/soil test:1 /bin/systemd --system

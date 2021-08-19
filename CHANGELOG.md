@@ -1,8 +1,8 @@
 ## 0.5.2
 
-This release introduces new allocation spec format. After upgrade transparent 
-downgrade is not possible. To downgrade first put Agent in drain mode to remove 
-all allocations. 
+This release introduces new allocation spec format. After upgrade transparent
+downgrade is not possible. To downgrade first put Agent in drain mode to remove
+all allocations.
 
 ## 0.5.1 (06.01.2018)
 
@@ -15,7 +15,7 @@ all allocations.
 ### Breaking changes
 
 * Resource provision is fully refactored. From this release all resources use
-  providers as source. Providers are located inside pods and obey pod 
+  providers as source. Providers are located inside pods and obey pod
   constraints.
 
 ## 0.4.2 (24.11.2017)
@@ -37,7 +37,7 @@ This release reintroduces clustering.
 
 ### Deprecated
 
-* `--id` command-line option for `soil agent` 
+* `--id` command-line option for `soil agent`
 
 ## 0.4.0 (26.10.2017)
 
@@ -45,7 +45,7 @@ This release introduces resources.
 
 ### Breaking changes
 
-* `/v1/status/ping`, `/v1/agent/reload` and `/v1/agent/drain` endpoints are 
+* `/v1/status/ping`, `/v1/agent/reload` and `/v1/agent/drain` endpoints are
   available during refactoring.
 * Clustering is temporary disabled.
 
@@ -95,7 +95,7 @@ This release introduces resources.
 ### Agent
 
 * Use strict drain state
-* Remove loud fields from pod status 
+* Remove loud fields from pod status
 
 ## 0.2.2 (11.09.2017)
 

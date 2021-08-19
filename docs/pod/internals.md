@@ -14,7 +14,7 @@ Soil always deploy one additional unit for each pod. Soil uses this unit to hold
 ### BLOB /etc/my-pod/sample {"Leave":false,"Permissions":420}
 [Unit]
 Description=my-pod
-Before=my-unit.service 
+Before=my-unit.service
 [Service]
 ExecStart=/usr/bin/sleep inf
 [Install]
@@ -22,5 +22,5 @@ WantedBy=multi-user.target
 ```
 
 Name of this unit is depends on unit name and namespace like `pod-private-my-pod.service`.
- 
+
 `ExecStart` lines can be configured by [`exec`]({{site.baseurl}}/agent/configuration) agent configuration setting.

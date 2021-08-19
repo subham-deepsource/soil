@@ -6,4 +6,4 @@ services:
       dockerfile: testdata/unit/Dockerfile
     command: go test -run=${TESTS} -p=1 ${TEST_ARGS} -tags="test_cluster ${TEST_TAGS}" ${PACKAGES}
     volumes:
-      - '../../:/go/src/github.com/akaspin/soil'
+      - '../../:/go/src/github.com/da-moon/soil'

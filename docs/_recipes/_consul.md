@@ -20,8 +20,8 @@ Lock cluster is very simple. It doesn't hold any valuable data except locks. We'
 
 ```hcl
 meta {
-  "consul_lock" = "true" 
-  "consul_lock_server" = "true" 
+  "consul_lock" = "true"
+  "consul_lock_server" = "true"
 }
 
 pod "consul-lock-server" {
@@ -32,7 +32,7 @@ pod "consul-lock-server" {
       "log_level": "ERROR",
       "ui": false,
       "disable_remote_exec": true,
-    
+
       "node_name": "${agent.id}",
       "retry_join": [],
       "bind_addr": "{{ env "CONSUL_BIND_IPV4" }}",
@@ -47,6 +47,6 @@ pod "consul-lock-server" {
       }
 }
     EOF
-  }  
+  }
 }
 ```

@@ -1,11 +1,12 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package scheduler_test
 
 import (
-	"github.com/akaspin/soil/agent/scheduler"
-	"github.com/akaspin/soil/lib"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/scheduler"
+	"github.com/da-moon/soil/lib"
+	"github.com/da-moon/soil/manifest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

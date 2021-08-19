@@ -2,7 +2,7 @@ package manifest
 
 import (
 	"encoding/json"
-	"github.com/akaspin/soil/lib"
+	"github.com/da-moon/soil/lib"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/hcl"
 	"github.com/hashicorp/hcl/hcl/ast"

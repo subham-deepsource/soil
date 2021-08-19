@@ -1,4 +1,5 @@
-REPO	= github.com/akaspin/soil
+SHELL := /bin/bash
+REPO	= github.com/da-moon/soil
 BIN		= soil
 
 TESTS	      = .
@@ -8,7 +9,7 @@ BENCH	      = .
 
 TEST_PACKAGES ?= ./...
 
-GO_IMAGE    = golang:1.9.2
+GO_IMAGE    = golang:1.16
 CWD 		= $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 V           = $(shell git describe --always --tags --dirty)
@@ -47,7 +48,7 @@ test-systemd: testdata/systemd/.vagrant-ok	## run SystemD tests
 	-v /etc/systemd/system:/etc/systemd/system \
 	-v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket \
 	-v /var/run/docker.sock:/var/run/docker.sock \
-	-v /vagrant:/go/src/github.com/akaspin/soil \
+	-v /vagrant:/go/src/github.com/da-moon/soil \
 	-v /tmp:/tmp \
 	$(GO_IMAGE) go test -race -run=$(TESTS) -p=1 $(TEST_ARGS) -tags="test_systemd $(TEST_TAGS)" $(TEST_PACKAGES)
 
@@ -67,9 +68,9 @@ coverage: testdata/systemd/.vagrant-ok	## run SystemD tests
 	-v /etc/systemd/system:/etc/systemd/system \
 	-v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket \
 	-v /var/run/docker.sock:/var/run/docker.sock \
-	-v /vagrant:/go/src/github.com/akaspin/soil \
+	-v /vagrant:/go/src/github.com/da-moon/soil \
 	-v /tmp:/tmp \
-	--workdir /go/src/github.com/akaspin/soil \
+	--workdir /go/src/github.com/da-moon/soil \
 	$(GO_IMAGE) ./testdata/ci/run-coverage.sh
 
 
@@ -86,11 +87,11 @@ coverage: testdata/systemd/.vagrant-ok	## run SystemD tests
 #
 #dist/%/$(BIN): $(SRC) $(ALL_SRC)
 #	@mkdir -p $(@D)
-#	GOPATH=$(GOPATH) CGO_ENABLED=0 GOOS=$* go build $(GOOPTS) -o $@ $(REPO)/command/$(BIN)
+#	GOPATH=$(GOPATH) CGO_ENABLED=0 GOOS=$* go build $(GOOPTS) -o $@ $(REPO)/cmd/$(BIN)
 #
 #dist/%/$(BIN)-debug: $(SRC) $(ALL_SRC)
 #	@mkdir -p $(@D)
-#	GOPATH=$(GOPATH) CGO_ENABLED=0 GOOS=$* go build $(GOOPTS) -tags debug -o $@ $(REPO)/command/$(BIN)
+#	GOPATH=$(GOPATH) CGO_ENABLED=0 GOOS=$* go build $(GOOPTS) -tags debug -o $@ $(REPO)/cmd/$(BIN)
 #
 #docker-image: dist/$(BIN)-$(V)-linux-amd64.tar.gz
 #	docker build --build-arg V=$(V) -t soil-local:$(V) -f Dockerfile.local .
@@ -106,10 +107,10 @@ coverage: testdata/systemd/.vagrant-ok	## run SystemD tests
 #install-debug: $(GOBIN)/$(BIN)-debug
 #
 #$(GOBIN)/$(BIN): $(SRC) $(ALL_SRC)
-#	GOPATH=$(GOPATH) CGO_ENABLED=0 go build $(GOOPTS) -o $@ $(REPO)/command/$(BIN)
+#	GOPATH=$(GOPATH) CGO_ENABLED=0 go build $(GOOPTS) -o $@ $(REPO)/cmd/$(BIN)
 #
 #$(GOBIN)/$(BIN)-debug: $(SRC) $(ALL_SRC)
-#	GOPATH=$(GOPATH) CGO_ENABLED=0 go build $(GOOPTS) -tags debug -o $@ $(REPO)/command/$(BIN)
+#	GOPATH=$(GOPATH) CGO_ENABLED=0 go build $(GOOPTS) -tags debug -o $@ $(REPO)/cmd/$(BIN)
 #
 #uninstall:
 #	rm -rf $(GOBIN)/$(BIN)
@@ -131,6 +132,19 @@ docs:
 clean-docs:
 	rm -rf docs/_site
 
+
+.SILENT: bootstrap
+.PHONY: bootstrap
+bootstrap:
+	- go env -w "GO111MODULE=on"
+	- go env -w "CGO_ENABLED=0"
+	- go env -w "CGO_LDFLAGS=-s -w -extldflags '-static'"
+	- go clean -modcache
+	- go mod tidy
+	- go generate -tags tools tools.go
+
+build: bootstrap
+	mage build
 
 .PHONY: \
 	docs \

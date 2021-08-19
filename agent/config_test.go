@@ -1,9 +1,10 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package agent_test
 
 import (
-	"github.com/akaspin/soil/agent"
+	"github.com/da-moon/soil/agent"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

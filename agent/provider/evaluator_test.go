@@ -1,3 +1,4 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package provider_test
@@ -5,12 +6,12 @@ package provider_test
 import (
 	"context"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/agent/provider"
-	"github.com/akaspin/soil/fixture"
-	"github.com/akaspin/soil/lib"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/agent/provider"
+	"github.com/da-moon/soil/fixture"
+	"github.com/da-moon/soil/lib"
+	"github.com/da-moon/soil/manifest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

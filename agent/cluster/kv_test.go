@@ -1,3 +1,4 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package cluster_test
@@ -5,9 +6,9 @@ package cluster_test
 import (
 	"context"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/agent/cluster"
-	"github.com/akaspin/soil/fixture"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/agent/cluster"
+	"github.com/da-moon/soil/fixture"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

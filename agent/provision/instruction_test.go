@@ -1,13 +1,14 @@
+//go:build ide || test_systemd
 // +build ide test_systemd
 
 package provision_test
 
 import (
 	"fmt"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/provision"
-	"github.com/akaspin/soil/fixture"
-	"github.com/coreos/go-systemd/dbus"
+	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/provision"
+	"github.com/da-moon/soil/fixture"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"

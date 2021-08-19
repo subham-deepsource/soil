@@ -2,8 +2,8 @@ package provision
 
 import (
 	"fmt"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/coreos/go-systemd/dbus"
+	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/da-moon/soil/agent/allocation"
 	"os"
 )
 

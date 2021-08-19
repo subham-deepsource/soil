@@ -1,0 +1,49 @@
+---
+project_name: soil
+dist: bin
+gomod:
+  env:
+    - GOPRIVATE=github.com/da-moon/soil
+before:
+  hooks:
+    - go mod download
+    - go mod tidy
+# [ TODO ] Look into integrating upx compression with
+# linux builds
+# e.g
+# hooks:
+#   post: upx --brute
+builds:
+  - id: "soil"
+    main: ./cmd/soil
+    env:
+      - GOPRIVATE=github.com/da-moon/soil
+      - GO111MODULE=on
+      - CGO_ENABLED=0
+    ldflags:
+      - -s
+      - -w
+      - -extldflags '-static'
+      - -X {{.Env.GOPRIVATE}}/contrib/mage/version.Revision={{.FullCommit}}
+      - -X {{.Env.GOPRIVATE}}/contrib/mage/version.Branch={{.Branch}}
+      - -X {{.Env.GOPRIVATE}}/contrib/mage/version.BuildDate={{.Date }}
+      - -X {{.Env.GOPRIVATE}}/contrib/mage/version.BuildUser={{.Env.USER }}
+      - -X {{.Env.GOPRIVATE}}/contrib/mage/version.Version={{.Version}}
+    goos:
+      - linux
+    goarch:
+      - amd64
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+snapshot:
+  name_template: "{{ .Tag }}"
+archives:
+- replacements:
+    linux: linux
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

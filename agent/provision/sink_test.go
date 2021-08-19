@@ -1,3 +1,4 @@
+//go:build ide || test_systemd
 // +build ide test_systemd
 
 package provision_test
@@ -5,15 +6,15 @@ package provision_test
 import (
 	"context"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/agent/bus/pipe"
-	"github.com/akaspin/soil/agent/provision"
-	"github.com/akaspin/soil/agent/scheduler"
-	"github.com/akaspin/soil/fixture"
-	"github.com/akaspin/soil/lib"
-	"github.com/akaspin/soil/manifest"
 	"github.com/akaspin/supervisor"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/agent/bus/pipe"
+	"github.com/da-moon/soil/agent/provision"
+	"github.com/da-moon/soil/agent/scheduler"
+	"github.com/da-moon/soil/fixture"
+	"github.com/da-moon/soil/lib"
+	"github.com/da-moon/soil/manifest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

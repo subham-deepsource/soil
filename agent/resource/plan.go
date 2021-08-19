@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"github.com/akaspin/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/allocation"
 	"github.com/mitchellh/hashstructure"
 )
 

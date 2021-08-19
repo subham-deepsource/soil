@@ -1,6 +1,6 @@
 package allocation
 
-import "github.com/coreos/go-systemd/dbus"
+import "github.com/coreos/go-systemd/v22/dbus"
 
 const DefaultPodPrefix = "pod-*"
 

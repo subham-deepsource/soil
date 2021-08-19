@@ -1,10 +1,11 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package bus_test
 
 import (
 	"fmt"
-	"github.com/akaspin/soil/agent/bus"
+	"github.com/da-moon/soil/agent/bus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

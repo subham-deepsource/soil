@@ -1,9 +1,9 @@
 package provision_test
 
 import (
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/lib"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/lib"
+	"github.com/da-moon/soil/manifest"
 	"testing"
 )
 

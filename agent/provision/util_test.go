@@ -1,10 +1,11 @@
+//go:build ide || test_systemd
 // +build ide test_systemd
 
 package provision_test
 
 import (
 	"fmt"
-	"github.com/akaspin/soil/fixture"
+	"github.com/da-moon/soil/fixture"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

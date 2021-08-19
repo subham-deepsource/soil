@@ -1,10 +1,11 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package manifest_test
 
 import (
-	"github.com/akaspin/soil/lib"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/lib"
+	"github.com/da-moon/soil/manifest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"

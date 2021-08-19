@@ -16,7 +16,7 @@ Soil Agent evaluates each pod change in next order:
 3. Deletes all BLOBs which be destroyed.
 4. Stores all BLOBs which be created or updated.
 5. Writes and optionally enables all units which be created or updated.
-6. Executes systemd corresponding commands from `unit->create|update` for all units which be created or updated. 
+6. Executes systemd corresponding commands from `unit->create|update` for all units which be created or updated.
 
 ![Pod lifecycle]({{site.baseurl}}/assets/images/pod-evaluation.svg)
 

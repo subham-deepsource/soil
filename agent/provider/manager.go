@@ -1,6 +1,6 @@
 package provider
 
-import "github.com/akaspin/soil/agent/allocation"
+import "github.com/da-moon/soil/agent/allocation"
 
 // Manager can reconfigure resources from providers
 type Manager interface {

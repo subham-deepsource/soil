@@ -1,6 +1,6 @@
 package pipe
 
-import "github.com/akaspin/soil/agent/bus"
+import "github.com/da-moon/soil/agent/bus"
 
 // Blackhole pipe consumes messages and silently discards them
 type Blackhole struct{}

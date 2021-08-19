@@ -6,7 +6,7 @@ weight: 10
 
 # Agent configuration
 
-Soil uses command line options and configuration files. Configuration from 
+Soil uses command line options and configuration files. Configuration from
 files can be reloaded on `SIGHUP`.
 
 ```shell
@@ -24,8 +24,8 @@ $ soil agent --id agent-1 --config=config.hcl --meta rack=left
 `meta` (`[]string: []`)
 : Initial values which can be referenced as `${meta.my_value}`. This option can be repeated many times. Definition form is `variable=value`.
 
-`address` (`string: ":7654"`) 
-: Address to listen for [API]({{site.baseurl}}/api) calls.  
+`address` (`string: ":7654"`)
+: Address to listen for [API]({{site.baseurl}}/api) calls.
 
 ## Configuration files
 
@@ -58,13 +58,13 @@ pod "second-pod" {
 }
 ```
 
-`system` `(map: {"pod_exec": "ExecStart=/usr/bin/sleep inf"})` 
+`system` `(map: {"pod_exec": "ExecStart=/usr/bin/sleep inf"})`
 : System properties. By default only [Pod unit]({{site.baseurl}}/pod/internals) "Exec" is defined.
 
 `cluster`
 : [Clustering]({{site.baseurl}}/agent/clustering) configuration
 
-`meta` `(map: {})` 
+`meta` `(map: {})`
 : Agent metadata. These values can be used in pod [constraints]({{site.baseurl}}/pod/constraint) and [interpolations]({{site.baseurl}}/pod/interpolation) as `${meta.<key>}`.
 
 `pod`

@@ -1,3 +1,4 @@
+//go:build ide || (test_systemd && !test_without_cluster)
 // +build ide test_systemd,!test_without_cluster
 
 package agent_test
@@ -8,11 +9,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent"
-	"github.com/akaspin/soil/fixture"
-	"github.com/akaspin/soil/lib"
-	"github.com/akaspin/soil/manifest"
-	"github.com/akaspin/soil/proto"
+	"github.com/da-moon/soil/agent"
+	"github.com/da-moon/soil/fixture"
+	"github.com/da-moon/soil/lib"
+	"github.com/da-moon/soil/manifest"
+	"github.com/da-moon/soil/proto"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

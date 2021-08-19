@@ -3,7 +3,7 @@ package allocation
 import (
 	"bytes"
 	"fmt"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/manifest"
 	"github.com/mitchellh/hashstructure"
 	"strings"
 )

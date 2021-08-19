@@ -14,7 +14,7 @@ cluster {
   ttl = "3m"
   retry = "30s"
 }
-``` 
+```
 
 Clustering configuration can be changed during Agent run. Agent doesn't require reachable backend before start or reload reconfiguration. Agent will connect then backend is available.
 

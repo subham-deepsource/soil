@@ -2,7 +2,7 @@ package provision
 
 import (
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/allocation"
 	"sync"
 )
 

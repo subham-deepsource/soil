@@ -128,4 +128,3 @@ Delete pod manifests from public namespace.
 ```shell
 $ curl -XDELETE -d `["one","two"]` http://127.0.0.1:7654/v1/registry
 ```
-

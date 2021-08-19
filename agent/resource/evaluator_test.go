@@ -1,3 +1,4 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package resource_test
@@ -6,11 +7,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/agent/resource"
-	"github.com/akaspin/soil/fixture"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/agent/resource"
+	"github.com/da-moon/soil/fixture"
+	"github.com/da-moon/soil/manifest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -27,7 +28,7 @@ func TestEvaluator_GetConstraint(t *testing.T) {
 	t.Run(`with resources`, func(t *testing.T) {
 		assert.Equal(t,
 			manifest.Constraint{
-				"1": "2",
+				"1":                            "2",
 				"${provider.test.1.allocated}": "true",
 				"${provider.test.3.allocated}": "true",
 			},

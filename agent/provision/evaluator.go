@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/manifest"
 	"github.com/akaspin/supervisor"
-	"github.com/coreos/go-systemd/dbus"
+	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/manifest"
 	"sync"
 )
 

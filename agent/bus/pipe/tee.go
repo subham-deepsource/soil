@@ -1,6 +1,6 @@
 package pipe
 
-import "github.com/akaspin/soil/agent/bus"
+import "github.com/da-moon/soil/agent/bus"
 
 // Tee replicates consumed message to given downstreams
 type Tee struct {

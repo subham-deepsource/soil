@@ -3,9 +3,9 @@ package scheduler
 import (
 	"context"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/manifest"
 	"github.com/akaspin/supervisor"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/manifest"
 	"regexp"
 )
 

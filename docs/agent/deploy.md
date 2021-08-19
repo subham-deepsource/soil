@@ -36,4 +36,3 @@ WantedBy=multi-user.target
 ```
 
 This setup will use `/etc/soil` for soil [configuration]({{site.baseurl}}/agent/configuration) files and assumes to deploy BLOBs in `/var/lib/soil` or `/run/soil`.
-

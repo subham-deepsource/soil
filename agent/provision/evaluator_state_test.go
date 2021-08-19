@@ -1,10 +1,11 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package provision_test
 
 import (
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/provision"
+	"github.com/da-moon/soil/agent/provision"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

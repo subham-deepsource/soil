@@ -7,7 +7,7 @@ weight: 20
 
 # Interpolation
 
-Soil Agent interpolates variables in pod manifests. Variables can be referenced by `${source.any.variable}`. If variable is not defined Soil agent leaves it unchanged.  
+Soil Agent interpolates variables in pod manifests. Variables can be referenced by `${source.any.variable}`. If variable is not defined Soil agent leaves it unchanged.
 
 ```hcl
 pod "my-pod" {
@@ -85,12 +85,12 @@ por "1" {
 
 ## `provision`
 
-Scheduler reports about provision states for all pods to `${provision.<pod-name>.*}`. These variables are available in constraints for all pods. 
+Scheduler reports about provision states for all pods to `${provision.<pod-name>.*}`. These variables are available in constraints for all pods.
 
 |Variable   |Description
 |-
 |`present`                                      |Pod is present in provision scheduler
-|`state`:`{done,create,update,destroy,dirty}`   |Provision state 
+|`state`:`{done,create,update,destroy,dirty}`   |Provision state
 
 ## `system`
 

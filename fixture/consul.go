@@ -4,12 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
-	"github.com/nu7hatch/gouuid"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,6 +11,13 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 type ConsulServerConfig struct {
@@ -116,7 +117,6 @@ func (s *ConsulServer) Up() {
 		s.t.Fail()
 	}
 	resp.Close()
-
 	res, err := s.dockerCli.ContainerCreate(s.ctx,
 		&container.Config{
 			Image: s.Config.RepoTag,
@@ -146,6 +146,7 @@ func (s *ConsulServer) Up() {
 			},
 		},
 		nil,
+		nil,
 		TestName(s.t))
 	if err != nil {
 		s.t.Error(err)
@@ -165,7 +166,7 @@ func (s *ConsulServer) Up() {
 func (s *ConsulServer) Pause() {
 	s.t.Helper()
 	ctx := context.Background()
-	filterBy, _ := filters.ParseFlag(fmt.Sprintf("name=^/%s$", TestName(s.t)), filters.NewArgs())
+	filterBy := filters.NewArgs(filters.Arg("name", TestName(s.t)))
 
 	list, err := s.dockerCli.ContainerList(ctx, types.ContainerListOptions{
 		All:     true,
@@ -184,8 +185,7 @@ func (s *ConsulServer) Pause() {
 func (s *ConsulServer) Unpause() {
 	s.t.Helper()
 	ctx := context.Background()
-	filterBy, _ := filters.ParseFlag(fmt.Sprintf("name=^/%s$", TestName(s.t)), filters.NewArgs())
-
+	filterBy := filters.NewArgs(filters.Arg("name", TestName(s.t)))
 	list, err := s.dockerCli.ContainerList(ctx, types.ContainerListOptions{
 		All:     true,
 		Filters: filterBy,
@@ -203,7 +203,7 @@ func (s *ConsulServer) Unpause() {
 func (s *ConsulServer) cleanupContainer() {
 	s.t.Helper()
 	ctx := context.Background()
-	filterBy, _ := filters.ParseFlag(fmt.Sprintf("name=^/%s$", TestName(s.t)), filters.NewArgs())
+	filterBy := filters.NewArgs(filters.Arg("name", TestName(s.t)))
 
 	list, err := s.dockerCli.ContainerList(ctx, types.ContainerListOptions{
 		All:     true,
@@ -215,7 +215,7 @@ func (s *ConsulServer) cleanupContainer() {
 	}
 	for _, orphan := range list {
 		s.dockerCli.ContainerStop(ctx, orphan.ID, nil)
-		s.dockerCli.ContainerWait(ctx, orphan.ID)
+		s.dockerCli.ContainerWait(ctx, orphan.ID, container.WaitConditionNotRunning)
 		s.dockerCli.ContainerRemove(ctx, orphan.ID, types.ContainerRemoveOptions{
 			Force: true,
 		})

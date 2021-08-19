@@ -3,7 +3,7 @@ package allocation
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/manifest"
 	"io"
 	"io/ioutil"
 	"path/filepath"

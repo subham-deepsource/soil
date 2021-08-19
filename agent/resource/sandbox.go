@@ -3,10 +3,10 @@ package resource
 import (
 	"context"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/agent/resource/estimator"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/agent/resource/estimator"
+	"github.com/da-moon/soil/manifest"
 )
 
 const (

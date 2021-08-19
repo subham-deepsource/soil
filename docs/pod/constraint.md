@@ -25,7 +25,7 @@ Soil will deploy pod only if all constraints are met. Both left and right values
 "value" = "other"   // fail
 ```
 
-By default soil compares right and left operands for equality. This behaviour can be changed by operation in right value delimited by space.  
+By default soil compares right and left operands for equality. This behaviour can be changed by operation in right value delimited by space.
 
 ```hcl
 "value" = "= other"   // fail
@@ -33,7 +33,7 @@ By default soil compares right and left operands for equality. This behaviour ca
 ```
 
 Equal, not equal (`=`, `!=`) Checks values for equality or not equality respectively.
- 
+
 ```hcl
 "0" = "< 2"     // ok
 "0" = "<= 2"    // ok
@@ -41,7 +41,7 @@ Equal, not equal (`=`, `!=`) Checks values for equality or not equality respecti
 "0" = ">= 2"    // fail
 ```
 
-Less, less or equal, greater, greater or equal (`<`, `>`, `>=`, `<=`) Soil tries to convert values to number and compare them. If at least one of values can't be converted Soil compares values as strings in lexicographical order. 
+Less, less or equal, greater, greater or equal (`<`, `>`, `>=`, `<=`) Soil tries to convert values to number and compare them. If at least one of values can't be converted Soil compares values as strings in lexicographical order.
 
 ```hcl
 "one,two" = "~ one,two,three"   // ok

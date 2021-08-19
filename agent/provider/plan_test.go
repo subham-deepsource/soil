@@ -1,10 +1,11 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package provider_test
 
 import (
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/provider"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/provider"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

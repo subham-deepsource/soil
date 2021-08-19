@@ -3,7 +3,7 @@ package estimator
 import (
 	"fmt"
 	"github.com/RoaringBitmap/roaring"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/manifest"
 	"strconv"
 )
 

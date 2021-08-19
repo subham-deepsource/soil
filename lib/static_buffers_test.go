@@ -1,9 +1,10 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package lib_test
 
 import (
-	"github.com/akaspin/soil/lib"
+	"github.com/da-moon/soil/lib"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"

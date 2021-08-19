@@ -3,8 +3,8 @@ package estimator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/manifest"
 )
 
 // Estimator result

@@ -1,5 +1,9 @@
 .consul_data_*
+bin/
 .test*
 .vagrant*
 /dist
 coverage.txt
+node_modules
+*.lock
+tmp

@@ -1,3 +1,4 @@
+//go:build ide || test_systemd
 // +build ide test_systemd
 
 package agent_test
@@ -6,8 +7,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent"
-	"github.com/akaspin/soil/fixture"
+	"github.com/da-moon/soil/agent"
+	"github.com/da-moon/soil/fixture"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"

@@ -1,12 +1,13 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package pipe_test
 
 import (
 	"context"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/agent/bus/pipe"
-	"github.com/akaspin/soil/fixture"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/agent/bus/pipe"
+	"github.com/da-moon/soil/fixture"
 	"testing"
 )
 

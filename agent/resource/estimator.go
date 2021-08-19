@@ -2,8 +2,8 @@ package resource
 
 import (
 	"context"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/agent/resource/estimator"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/agent/resource/estimator"
 	"io"
 )
 

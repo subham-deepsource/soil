@@ -6,7 +6,7 @@ weight: 100
 
 # Agent Operations API
 
-`/agent/` API operates lifecycle of specific Soil Agent 
+`/agent/` API operates lifecycle of specific Soil Agent
 
 ## Reload
 

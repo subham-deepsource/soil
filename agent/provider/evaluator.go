@@ -3,9 +3,9 @@ package provider
 import (
 	"context"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/allocation"
-	"github.com/akaspin/soil/manifest"
 	"github.com/akaspin/supervisor"
+	"github.com/da-moon/soil/agent/allocation"
+	"github.com/da-moon/soil/manifest"
 	"github.com/mitchellh/copystructure"
 )
 

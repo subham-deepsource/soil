@@ -1,3 +1,4 @@
+//go:build ide || test_unit
 // +build ide test_unit
 
 package scheduler_test
@@ -6,10 +7,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/akaspin/logx"
-	"github.com/akaspin/soil/agent/bus"
-	"github.com/akaspin/soil/agent/scheduler"
-	"github.com/akaspin/soil/fixture"
-	"github.com/akaspin/soil/manifest"
+	"github.com/da-moon/soil/agent/bus"
+	"github.com/da-moon/soil/agent/scheduler"
+	"github.com/da-moon/soil/fixture"
+	"github.com/da-moon/soil/manifest"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"regexp"
