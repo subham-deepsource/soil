@@ -1,0 +1,215 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "bootstrap",
+      "command": "just bootstrap"
+    },
+    {
+      "type": "shell",
+      "label": "build",
+      "command": "just build"
+    },
+    {
+      "type": "shell",
+      "label": "build-docker-image",
+      "command": "just build-docker-image"
+    },
+    {
+      "type": "shell",
+      "label": "commit",
+      "command": "just commit"
+    },
+    {
+      "type": "shell",
+      "label": "default",
+      "command": "just default"
+    },
+    {
+      "type": "shell",
+      "label": "dependencies",
+      "command": "just dependencies"
+    },
+    {
+      "type": "shell",
+      "label": "format",
+      "command": "just format"
+    },
+    {
+      "type": "shell",
+      "label": "format-go",
+      "command": "just format-go"
+    },
+    {
+      "type": "shell",
+      "label": "format-json",
+      "command": "just format-json"
+    },
+    {
+      "type": "shell",
+      "label": "format-just",
+      "command": "just format-just"
+    },
+    {
+      "type": "shell",
+      "label": "generate-changelog",
+      "command": "just generate-changelog"
+    },
+    {
+      "type": "shell",
+      "label": "git-fetch",
+      "command": "just git-fetch"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-chisel",
+      "command": "just gitpod-chisel"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-docker-login",
+      "command": "just gitpod-docker-login"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-docker-login-env",
+      "command": "just gitpod-docker-login-env"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-docker-socket-chown",
+      "command": "just gitpod-docker-socket-chown"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-dropbear",
+      "command": "just gitpod-dropbear"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-fix-ownership",
+      "command": "just gitpod-fix-ownership"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-ssh-config",
+      "command": "just gitpod-ssh-config"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-ssh-pub-key",
+      "command": "just gitpod-ssh-pub-key"
+    },
+    {
+      "type": "shell",
+      "label": "gitpod-ssh-pub-key-env",
+      "command": "just gitpod-ssh-pub-key-env"
+    },
+    {
+      "type": "shell",
+      "label": "go-bootstrap",
+      "command": "just go-bootstrap"
+    },
+    {
+      "type": "shell",
+      "label": "golangci-lint",
+      "command": "just golangci-lint"
+    },
+    {
+      "type": "shell",
+      "label": "hosts-config",
+      "command": "just hosts-config"
+    },
+    {
+      "type": "shell",
+      "label": "kary-comments",
+      "command": "just kary-comments"
+    },
+    {
+      "type": "shell",
+      "label": "lint",
+      "command": "just lint"
+    },
+    {
+      "type": "shell",
+      "label": "lxc-launch",
+      "command": "just lxc-launch"
+    },
+    {
+      "type": "shell",
+      "label": "lxc-profile",
+      "command": "just lxc-profile"
+    },
+    {
+      "type": "shell",
+      "label": "lxc-render-profile",
+      "command": "just lxc-render-profile"
+    },
+    {
+      "type": "shell",
+      "label": "lxc-sandbox",
+      "command": "just lxc-sandbox"
+    },
+    {
+      "type": "shell",
+      "label": "lxc-tail-logs",
+      "command": "just lxc-tail-logs"
+    },
+    {
+      "type": "shell",
+      "label": "lxc-wait",
+      "command": "just lxc-wait"
+    },
+    {
+      "type": "shell",
+      "label": "major-release",
+      "command": "just major-release"
+    },
+    {
+      "type": "shell",
+      "label": "minor-release",
+      "command": "just minor-release"
+    },
+    {
+      "type": "shell",
+      "label": "patch-release",
+      "command": "just patch-release"
+    },
+    {
+      "type": "shell",
+      "label": "pre-commit",
+      "command": "just pre-commit"
+    },
+    {
+      "type": "shell",
+      "label": "snapshot",
+      "command": "just snapshot"
+    },
+    {
+      "type": "shell",
+      "label": "ssh-config",
+      "command": "just ssh-config"
+    },
+    {
+      "type": "shell",
+      "label": "ssh-key",
+      "command": "just ssh-key"
+    },
+    {
+      "type": "shell",
+      "label": "vagrant-down-gcloud",
+      "command": "just vagrant-down-gcloud"
+    },
+    {
+      "type": "shell",
+      "label": "vagrant-up-gcloud",
+      "command": "just vagrant-up-gcloud"
+    },
+    {
+      "type": "shell",
+      "label": "vscode-tasks",
+      "command": "just vscode-tasks"
+    }
+  ]
+}
