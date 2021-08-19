@@ -3,11 +3,12 @@ package allocation
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/da-moon/soil/manifest"
 	"io"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+
+	"github.com/da-moon/soil/manifest"
 )
 
 const (
@@ -103,7 +104,7 @@ func (f *UnitFile) Read() (err error) {
 }
 
 func (f *UnitFile) Write() (err error) {
-	err = ioutil.WriteFile(f.Path, []byte(f.Source), 755)
+	err = ioutil.WriteFile(f.Path, []byte(f.Source), 0755)
 	return
 }
 
