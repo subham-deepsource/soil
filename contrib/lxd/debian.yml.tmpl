@@ -48,6 +48,8 @@ config:
     packages:
       - apt-utils
       - sudo
+      - bash-completion
+      - build-essential
       - apt-transport-https
       - gnupg2
       - gnupg-agent
@@ -75,23 +77,49 @@ config:
         ssh_authorized_keys:
           - {{ "/id_rsa.pub" | file.Read }}
     runcmd:
-      - /bin/bash -cex
+      - /bin/bash -xec
       - |
         echo "========= cloud-init =========" > /tmp/cloud-init
         systemctl restart sshd ;
         docker run --rm -i hello-world ;
-				if ! go version > /dev/null 2>&1 ; then
-					export GOROOT=/usr/local/go ;
-					export GOPATH=/go ;
-					wget -q -O - https://git.io/vQhTU | bash -s -- --version 1.17 ;
-					chown "$(id -u {{ or (.Env.USER) 'golang-debian' }}):$(id -g {{ or (.Env.USER) 'golang-debian' }})" "${GOPATH}" -R
-					chown "$(id -u {{ or (.Env.USER) 'golang-debian' }}):$(id -g {{ or (.Env.USER) 'golang-debian' }})" "${GOROOT}" -R
-					(
-						echo 'export GOROOT=/usr/local/go' ;
-						echo 'export PATH=$GOROOT/bin:$PATH' ;
-						echo 'export GOPATH=/go' ;
-						echo 'export PATH=$GOPATH/bin:$PATH' ;
-					) | tee -a /home/{{ or (.Env.USER) 'golang-debian' }}/.bashrc
-				fi
-        chown "$(id -u {{ or (.Env.USER) 'golang-debian' }}):$(id -g {{ or (.Env.USER) 'golang-debian' }})" "${GOROOT}" /home/{{ or (.Env.USER) 'golang-debian' }}/.bashrc
+        export GOROOT=/usr/local/go ;
+        export "PATH=$GOROOT/bin:$PATH" ;
+        if ! go version > /dev/null 2>&1 ; then
+          export GOPATH=/go ;
+          wget -q -O - https://git.io/vQhTU | bash -s -- --version 1.17 ;
+          chown "$(id -u {{ or (.Env.USER) "golang-debian" }}):$(id -g {{ or (.Env.USER) "golang-debian" }})" "${GOPATH}" -R ;
+          chown "$(id -u {{ or (.Env.USER) "golang-debian" }}):$(id -g {{ or (.Env.USER) "golang-debian" }})" "${GOROOT}" -R ;
+          (
+            echo 'export GOROOT=/usr/local/go' ;
+            echo 'export PATH=$GOROOT/bin:$PATH' ;
+            echo 'export GOPATH=/go' ;
+            echo 'export PATH=$GOPATH/bin:$PATH' ;
+            echo 'export GO111MODULE=on' ;
+            echo 'export CGO_ENABLED=0' ;
+            echo "export CGO_LDFLAGS='-s -w -extldflags \"-static\"'" ;
+          ) | tee -a /home/{{ or (.Env.USER) "golang-debian" }}/.bashrc ;
+        fi
+        export CARGO_HOME="/usr/local/cargo" ;
+        export PATH="${CARGO_HOME}/bin:${PATH}" ;
+        if ! just --version > /dev/null 2>&1;then
+          if ! cargo --version > /dev/null 2>&1;then
+            export RUST_VERSION="1.54.0" ;
+            export RUSTUP_URL="https://sh.rustup.rs" ;
+            export RUSTUP_HOME="/usr/local/rustup" ;
+            curl --proto '=https' --tlsv1.2 -fSsl "${RUSTUP_URL}" | bash -s -- -y \
+            --no-modify-path \
+            --profile default \
+            --default-toolchain "${RUST_VERSION}" ;
+            chmod -R a+w "${RUSTUP_HOME}" "${CARGO_HOME}" ;
+            (
+            echo 'export CARGO_HOME="/usr/local/cargo"' ;
+            echo 'export PATH=${CARGO_HOME}/bin:$PATH' ;
+            echo 'export RUSTUP_HOME="/usr/local/rustup"' ;
+            ) | tee -a /home/{{ or (.Env.USER) "golang-debian" }}/.bashrc ;
+          fi
+          cargo install --all-features just ;
+          chown "$(id -u {{ or (.Env.USER) "golang-debian" }}):$(id -g {{ or (.Env.USER) "golang-debian" }})" "${CARGO_HOME}" -R ;
+          chown "$(id -u {{ or (.Env.USER) "golang-debian" }}):$(id -g {{ or (.Env.USER) "golang-debian" }})" "${RUSTUP_HOME}" -R ;
+        fi
+        chown "$(id -u {{ or (.Env.USER) "golang-debian" }}):$(id -g {{ or (.Env.USER) "golang-debian" }})" "${GOROOT}" /home/{{ or (.Env.USER) "golang-debian" }}/.bashrc ;
         exit 0 ;
