@@ -10,67 +10,813 @@ project_name := `basename $PWD`
 default: format-just
     @just --choose
 
-# ─── DEPENDENCIES ───────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────────
+clean: teardown-lxc
+
+#
+# ──────────────────────────────────────────────────────────────── I ──────────
+#   :::::: D E P E N D E N C I E S : :  :   :    :     :        :          :
+# ──────────────────────────────────────────────────────────────────────────
+#
+# ─── BOOTSTRAP ALL REPOSITORY REQUIREMENTS ──────────────────────────────────────
+#:::::: :::::: YOU MUST RUN THIS TARGET ONCE AFTER CLONING THE REPO ::::::  ::::::
 
 alias b := bootstrap
 
-bootstrap: dependencies go-bootstrap vscode-tasks kary-comments format pre-commit
+bootstrap: dependencies kary-comments format pre-commit go-bootstrap
     @echo bootstrap completed
 
-# ────────────────────────────────────────────────────────────────────────────────
+# ─── ENSURE PARU INSTALL ON ARCH LINUX ──────────────────────────────────────────
+install-paru:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -- pacman --version > /dev/null 2>&1 ; then
+    if ! command -- paru --version > /dev/null 2>&1 ; then
+    rm -rf /tmp/paru
+    git clone https://aur.archlinux.org/paru.git /tmp/paru
+    pushd /tmp/paru
+    for i in {1..5}; do
+    makepkg -sicr --noconfirm && break || sleep 15
+    done ;
+    popd
+    sudo rm -rf /tmp/paru
+    else
+    echo >&2 "*** paru installation detected. skipping build ..."
+    fi
+    else
+    true
+    fi
+
+# ─── UPDATE AND UPGRADE PACKAGES INSTALLED THROUGH OS PACKAGE MANAGER ───────────
+update-os-pkgs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if  command -- apt -h > /dev/null 2>&1 ; then
+      echo >&2 "*** Debian based distribution detected."
+      export DEBIAN_FRONTEND=noninteractive
+      sudo apt-get update -qq
+      sudo apt-get -f install -y
+      sudo apt-get upgrade -yq
+      sudo apt-get autoremove --purge -y
+    elif command -- pacman --version > /dev/null 2>&1 ; then
+      echo >&2 "*** Arch Linux based distribution detected."
+      echo >&2 "*** updating official Arch packages with pacman."
+      sudo pacman -Syyu --noconfirm || true ;
+      if command -- paru --version > /dev/null 2>&1 ; then
+        just install-paru
+        echo >&2 "*** updating Packages installed from AUR with 'paru'."
+        paru -Syyu --cleanafter --removemake --noconfirm || true ;
+      else
+        true
+      fi
+    else
+      echo >&2 "*** Your Operating system is not supported."
+    fi
+
+# ─── INSTALL USING OS PACKAGE MANAGER ───────────────────────────────────────────
+
+install-os-package pkg:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if  command -- apt -h > /dev/null 2>&1 ; then
+      PKG_OK=$((dpkg-query -W --showformat='${Status}\n' {{ pkg }} || true )|(grep "install ok installed" || true))
+      if [ "" = "$PKG_OK" ]; then
+        sudo apt-get -yq install {{ pkg }}
+      else
+        echo >&2 "*** '{{ pkg }}' has already been installed.skipping "
+      fi
+    elif command -- pacman --version > /dev/null 2>&1 ; then
+      if ! pacman -Qi "{{ pkg }}" > /dev/null 2>&1 ; then
+        sudo pacman -Sy --needed --noconfirm {{ pkg }} || true ;
+      else
+        echo >&2 "*** '{{ pkg }}' has already been installed.skipping "
+      fi
+    else
+      echo >&2 "*** Your Operating system is not supported."
+      exit 1
+    fi
+
+# ─── VALIADATE AND BOOTSTRAP CORE TOOLS ─────────────────────────────────────────
+
+alias bc := bootstrap-core
+
+bootstrap-core: update-os-pkgs
+    #!/usr/bin/env bash
+    set -euo pipefail
+    core_dependencies=()
+    core_dependencies+=("jq")
+    core_dependencies+=("parallel")
+    core_dependencies+=("cmake")
+    core_dependencies+=("make")
+    core_dependencies+=("git")
+    core_dependencies+=("fzf")
+    core_dependencies+=("sshpass")
+    core_dependencies+=("bash-completion")
+    core_dependencies+=("pandoc")
+    core_dependencies+=("pdftk")
+    core_dependencies+=("texmaker")
+    core_dependencies+=("ripgrep")
+    core_dependencies+=("exa")
+    core_dependencies+=("graphviz")
+    if command -- apt -h > /dev/null 2>&1 ; then
+      core_dependencies+=("python3-distutils")
+      core_dependencies+=("libgconf-2-4")
+      core_dependencies+=("libssl-dev")
+      core_dependencies+=("golang")
+      core_dependencies+=("build-essential")
+      core_dependencies+=("software-properties-common")
+      core_dependencies+=("poppler-utils")
+      core_dependencies+=("librsvg2-bin")
+      core_dependencies+=("lmodern")
+      core_dependencies+=("fonts-symbola")
+      core_dependencies+=("xfonts-utils ")
+      core_dependencies+=("texlive-xetex")
+      core_dependencies+=("texlive-fonts-recommended")
+      core_dependencies+=("texlive-fonts-extra")
+      core_dependencies+=("texlive-latex-extra")
+    else
+      true
+    fi
+    if command -- pacman --version > /dev/null 2>&1 ; then
+      core_dependencies+=("molecule")
+      core_dependencies+=("yarn")
+      core_dependencies+=("npm")
+      core_dependencies+=("nodejs")
+      core_dependencies+=("pacman-contrib")
+      core_dependencies+=("expac")
+      core_dependencies+=("base-devel")
+      core_dependencies+=("go")
+      core_dependencies+=("poppler")
+      core_dependencies+=("librsvg")
+      core_dependencies+=("xorg-xfontsel")
+      core_dependencies+=("texlive-most")
+    else
+      true
+    fi
+    if [ ${#core_dependencies[@]} -ne 0  ]; then
+      for dep in "${core_dependencies[@]}"; do
+        just install-os-package "${dep}"
+      done
+    else
+      true
+    fi
+
+# ─── ENSURE SNAPD INSTALLATION ──────────────────────────────────────────────────
+
+_ensure-snapd-installation:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    IFS=':' read -a paths <<< "$(printenv PATH)" ;
+    [[ ! " ${paths[@]} " =~ " /snap/bin " ]] && export PATH="${PATH}:/snap/bin" || true
+    [[ ! " ${paths[@]} " =~ " //usr/sbin " ]] && export PATH="${PATH}://usr/sbin" || true
+    if ! command -- snap --version > /dev/null 2>&1 ; then
+        if command -- apt -h > /dev/null 2>&1 ; then
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt-get update -qq > /dev/null 2>&1
+            sudo apt-get upgrade -yqq
+            sudo apt-get install -yq snapd
+            sudo sysctl kernel.unprivileged_userns_clone=1 > /dev/null 2>&1
+        else
+            true
+        fi
+        if command -- pacman --version > /dev/null 2>&1 ; then
+            rm -rf /tmp/snapd
+            git clone https://aur.archlinux.org/snapd.git /tmp/snapd
+            pushd /tmp/snapd
+            for i in {1..5}; do
+            makepkg -sicr --noconfirm && break || sleep 15
+            done ;
+            popd
+            sudo rm -rf /tmp/snapd
+            [ -d /var/lib/snapd/snap ] && sudo ln -sf /var/lib/snapd/snap /snap || true
+        else
+            true
+        fi
+    else
+        true
+    fi
+    sudo systemctl enable --now snapd.socket
+    sudo systemctl enable --now snapd.service
+    echo "PATH=$PATH:/snap/bin" | sudo tee -a /etc/environment > /dev/null
+    if ! command -- snap --version  > /dev/null 2>&1 ; then
+        echo >&2 "*** snapd could not be found."
+        exit 1
+    else
+      echo >&2 "*** ensuring successful installation of snapd ..."
+      sudo snap install hello-world
+      exit 0
+    fi
+
+# ─── ENSURE LXD INSTALLATION ────────────────────────────────────────────────────
+bootstrap-lxd:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! sudo /snap/bin/lxd --version  > /dev/null 2>&1 ; then
+        just _ensure-snapd-installation ;
+        sudo snap install lxd ;
+        if command -- pacman --version > /dev/null 2>&1 ; then
+            just install-os-package apparmor
+            sudo systemctl enable --now apparmor
+            sudo systemctl restart apparmor
+            sudo apparmor_parser -r /etc/apparmor.d/*snap-confine*
+            sudo apparmor_parser -r /var/lib/snapd/apparmor/profiles/snap-confine*
+            sudo apparmor_parser -r /var/lib/snapd/apparmor/profiles/*
+            sudo systemctl restart snapd.service
+            sudo snap restart lxd
+        else
+            true
+        fi
+
+
+    else
+      echo >&2 "*** lxd has already been installed."
+      true
+    fi
+    getent group lxd > /dev/null || sudo groupadd lxd
+    sudo usermod --append --groups lxd "$(whoami)"
+    if [[ -z $(sudo /snap/bin/lxc profile device list default 2> /dev/null) ]]; then
+        echo >&2 "*** initializing lxd default profile."
+        sudo /snap/bin/lxd init \
+        --auto \
+        --network-address="0.0.0.0" \
+        --network-port="8443" \
+        --trust-password="$(whoami)" \
+        --storage-backend="dir" 2>/dev/null
+    else
+        echo >&2 "*** lxd default profile has already been initialized."
+    fi
+    sudo sed -i \
+        -e '/^\s*#/d' \
+        -e '/^\lxd*#/d' \
+        -e '/^\lxc*#/d' \
+        -e '/^\s*$/d' \
+        /etc/bash.bashrc \
+        && ( \
+        echo '[ $( lxc --version  > /dev/null 2>&1) ] && eval $(lxc completion bash 2>/dev/null);' ; \
+        echo '[ $( lxd --version  > /dev/null 2>&1) ] && eval $(lxd completion bash 2>/dev/null);' ;
+        ) | sudo tee -a /etc/bash.bashrc > /dev/null
+    sudo iptables -P FORWARD ACCEPT > /dev/null 2>&1 || true
+
+# ─── VALIDATE AND BOOTSTRAP PYTHON INSTALLATION ─────────────────────────────────
+# TODO keep track of removed packages and reinstall them after get-pip.py is done
+
+alias bp := bootstrap-python
+
+_remove-pip:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if  command -- apt -h > /dev/null 2>&1 ; then
+      PKG_OK=$((dpkg-query -W --showformat='${Status}\n' "python3-pip" || true )|(grep "install ok installed" || true))
+      if [ "" != "$PKG_OK" ]; then
+        python3 -m pip freeze --user  | xargs -r python3 -m pip uninstall --quiet --yes
+        sudo apt -yqq remove --purge python3-pip
+      else
+        true
+      fi
+    elif command -- pacman --version > /dev/null 2>&1 ; then
+      if  pacman -Qi "python-pip" > /dev/null 2>&1 ; then
+        python3 -m pip freeze --user  | xargs -r python3 -m pip uninstall --quiet --yes
+        sudo pacman -Rcns --noconfirm python-pip ;
+      else
+        true
+      fi
+    else
+      true
+    fi
+
+bootstrap-python: _remove-pip
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring python3 and pip3 are installed"
+    to_install=()
+    to_install+=("python")
+    if  command -- apt -h > /dev/null 2>&1 ; then
+        to_install+=("python3")
+    else
+        true
+    fi
+    for pkg in "${to_install[@]}"; do
+        echo >&2 "*** ensuring '${pkg}' is installed"
+        just install-os-package "${pkg}"
+    done
+
+    if ! command -- $(which pip3) --version > /dev/null 2>&1 ; then
+        echo >&2 "*** installing pip with 'get-pip.py' script"
+        export PIP_USER=false
+        curl -fsSl https://bootstrap.pypa.io/get-pip.py | sudo python3 -
+    else
+      echo >&2 "*** Python3 and Pip3 installations have been validated."
+      true
+    fi
+    IFS=':' read -a paths <<< "$(printenv PATH)" ;
+    if [[ ! " ${paths[@]} " =~ " ${HOME}/.local/bin " ]]; then
+        echo "*** adding $HOME/.local/bin to user's PATH"
+        [ ! -d "$HOME/.local/bin" ] && mkdir -p "$HOME/.local/bin" || true ;
+        echo 'export PATH="${PATH}:${HOME}/.local/bin"' >> ~/.bashrc
+    fi
+
+# ─── ENSURE PYTHON DEPENDENCIES ARE UPDATED ─────────────────────────────────────
+
+alias up := update-python-pkgs
+
+update-python-pkgs: bootstrap-python
+    #!/usr/bin/env bash
+    set -euo pipefail
+    IFS=':' read -a paths <<< "$(printenv PATH)" ;
+    [[ ! " ${paths[@]} " =~ " ${HOME}/.local/bin " ]] && export PATH="${PATH}:${HOME}/.local/bin" || true
+    echo >&2 "*** ensuring all user installed python packages have been updated to latest versions"
+    upgradeable=($( $(which python3) -m pip list --user --outdated --format=freeze 2>/dev/null \
+    | (/bin/grep -v '^\-e' || true) \
+    | (/bin/cut -d = -f 1 || true) \
+    ))
+    if [ ${#upgradeable[@]} -ne 0  ];then
+      echo >&2 "*** upgrading outdated python dependencies : ${upgradeable[@]}"
+      $(which python3) -m pip install \
+        --user \
+        --upgrade \
+        --no-cache-dir \
+        --progress-bar ascii \
+        ${upgradeable[@]} 2>/dev/null ;
+    else
+      echo >&2 "*** all python packages are at the latest version"
+    fi
+
+# ─── INSTALL PYTHON PACKAGE ─────────────────────────────────────────────────────
+
+# --install-scripts=/usr/local/bin \
+install-python-package pkg:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -- $(which pip3) --version > /dev/null 2>&1 ; then
+      just bootstrap-python
+    else
+      true
+    fi
+    $(which python3) -m pip install \
+      --user \
+      --quiet \
+      --no-cache-dir \
+      --progress-bar ascii {{ pkg }} 2>/dev/null || true
+
+# ─── INSTALL PYTHON VENDOR DEPENDENCIES ─────────────────────────────────────────
+
+alias ipd := install-python-dependencies
+alias python-dependencies := install-python-dependencies
+
+install-python-dependencies: update-python-pkgs
+    #!/usr/bin/env bash
+    set -euo pipefail
+    IFS=':' read -a paths <<< "$(printenv PATH)" ;
+    [[ ! " ${paths[@]} " =~ " ${HOME}/.local/bin " ]] && export PATH="${PATH}:${HOME}/.local/bin" || true
+    echo >&2 "*** ensuring all required python packages are installed"
+    PYTHON_PACKAGES="\
+    diagrams \
+    yq \
+    pre-commit \
+    pylint \
+    yapf \
+    autoflake \
+    isort \
+    coverage \
+    "
+    installed=($( $(which python3) -m pip list --user --format=freeze 2>/dev/null \
+    | (/bin/grep -v '^\-e' || true) \
+    | cut -d = -f 1 || true \
+    ))
+    IFS=' ' read -a PYTHON_PACKAGES <<< "$PYTHON_PACKAGES" ;
+    to_install=()
+    if [ ${#PYTHON_PACKAGES[@]} -ne 0  ];then
+      intersection=($(comm -12 <(for X in "${PYTHON_PACKAGES[@]}"; do echo "${X}"; done|sort)  <(for X in "${installed[@]}"; do echo "${X}"; done|sort)))
+      to_install=($(echo ${intersection[*]} ${PYTHON_PACKAGES[*]} | sed 's/ /\n/g' | sort -n | uniq -u | paste -sd " " - ))
+    else
+      true
+    fi
+    if [ ${#to_install[@]} -ne 0  ];then
+      for dep in "${to_install[@]}"; do
+        echo >&2 "*** ensuring python dependencies ${dep} has been installed"
+        just install-python-package "${dep}"
+      done
+    else
+      echo >&2 "*** all required python dependencies have been satisfied"
+    fi
+
+# ─── VALIDATE AND BOOTSTRAP NODEJS INSTALLATION ─────────────────────────────────
+
+alias bn := bootstrap-nodejs
+
+bootstrap-nodejs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -- $(which node) --version > /dev/null 2>&1 ; then
+      if  command -- pacman -h > /dev/null 2>&1 ; then
+        sudo pacman -Sy --needed --noconfirm "nodejs"
+      else
+        true ;
+      fi
+    else
+      true
+    fi
+    if ! command -- $(which yarn) --version > /dev/null 2>&1 ; then
+      if  command -- pacman -h > /dev/null 2>&1 ; then
+        sudo pacman -Sy --needed --noconfirm "yarn"
+      else
+        true
+      fi
+    else
+      true
+    fi
+    if ! command -- $(which node) --version > /dev/null 2>&1 ; then
+      echo >&2 "*** nodejs is required."
+      exit 1
+    else
+      echo >&2 "*** Node.JS installation has been validated."
+    fi
+    if ! command -- $(which npm) --version > /dev/null 2>&1 ; then
+      echo >&2 "*** npm is required."
+      exit 1
+    else
+      echo >&2 "*** npm installation has been validated."
+    fi
+
+    if ! command -- $(which yarn) --version > /dev/null 2>&1 ; then
+      echo >&2 "*** yarn not found. installing"
+      sudo npm install -g yarn
+      exit 1
+    else
+      echo >&2 "*** yarn installation has been validated."
+    fi
+
+# ─── INSTALL A NODEJS PACKAGE WITH YARN ─────────────────────────────────────────
+
+install-nodejs-package pkg:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -- $(which yarn) --version > /dev/null 2>&1 ; then
+      just bootstrap-nodejs
+    else
+      true
+    fi
+    sudo $(which yarn) global add --latest --prefix /usr/local {{ pkg }}
+
+# ─── ENSURE NODEJS PACKAGES ARE UPDATED ─────────────────────────────────────────
+
+alias un := update-nodejs
+
+update-nodejs: bootstrap-nodejs
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring all globally installed yarn packages have been updated to latest versions"
+    if [ -r $(sudo $(which yarn) global dir 2>/dev/null )/package.json ] ; then
+      pushd $(sudo $(which yarn) global dir 2>/dev/null  ) > /dev/null 2>&1
+      upgradeable=($(($(which yarn) outdated --json 2>/dev/null || true) \
+      | (jq -r '. | select (.type == "table").data.body[]|.[]' || true ) \
+      | (/bin/grep -Pv '^([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?$' || true) \
+      | (/bin/grep -Pv '^http(s)*:\/\/|^dependencies$' || true) \
+      )) ;
+      popd > /dev/null 2>&1
+      if [ ${#upgradeable[@]} -ne 0  ];then
+        for pkg in "${upgradeable[@]}"; do
+        echo >&2 "*** upgrading outdated nodejs package ${pkg}"
+        just install-nodejs-package "${pkg}"
+        done
+      else
+        echo >&2 "*** all nodejs packages are at the latest version"
+      fi
+    else
+      true
+    fi
+
+# ─── INSTALL ALL NODEJS VENDOR DEPENDENCIES ─────────────────────────────────────
+
+alias ind := install-nodejs-dependencies
+alias nodejs-dependencies := install-nodejs-dependencies
+
+install-nodejs-dependencies: update-nodejs
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring all required nodejs packages are installed"
+    NODE_PACKAGES="\
+    markdown-magic \
+    remark \
+    remark-cli \
+    remark-stringify \
+    remark-frontmatter \
+    wcwidth \
+    prettier \
+    bash-language-server \
+    dockerfile-language-server-nodejs \
+    standard-readme-spec \
+    "
+    IFS=' ' read -a NODE_PACKAGES <<< "$NODE_PACKAGES" ;
+    installed=()
+    if command -- jq -h > /dev/null 2>&1 && [ -r $(sudo $(which yarn) global dir 2>/dev/null )/package.json ] ; then
+      while IFS='' read -r line; do
+        installed+=("$line");
+      done < <( (cat $(sudo $(which yarn) global dir 2>/dev/null )/package.json || true ) | (jq -r '.dependencies|keys[]' ||true ))
+    fi
+    intersection=($(comm -12 <(for X in "${NODE_PACKAGES[@]}"; do echo "${X}"; done|sort)  <(for X in "${installed[@]}"; do echo "${X}"; done|sort)))
+    to_install=($(echo ${intersection[*]} ${NODE_PACKAGES[*]} | sed 's/ /\n/g' | sort -n | uniq -u | paste -sd " " - ))
+    if [ ${#to_install[@]} -ne 0  ];then
+      for dep in "${to_install[@]}"; do
+        echo >&2 "*** installing unmet NodeJS dependencies ${dep}"
+        just install-nodejs-package "${dep}"
+      done
+    else
+      echo >&2 "*** all required NodeJS dependencies have been satisfied"
+    fi
+
+# ─── VALIDATE RUST INSTALLATION ─────────────────────────────────────────────────
+
+alias br := bootstrap-rust
+
+bootstrap-rust:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -- rustup -h > /dev/null 2>&1 ; then
+      echo >&2 "*** rustup is required."
+      exit 1
+    else
+      true
+    fi
+    if ! command -- cargo -h > /dev/null 2>&1 ; then
+      echo >&2 "*** cargo is required."
+      exit 1
+    else
+      true
+    fi
+
+# ─── UPDATE RUST TOOLCHAINS AND INSTALLED PACKAGES ──────────────────────────────
+
+alias ur := update-rust
+
+update-rust: bootstrap-rust
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring rustup has been updated."
+    rustup update >/dev/null 2>&1
+    echo >&2 "*** ensuring rust nightly and stable toolchains are installed."
+    rustup toolchain install nightly stable >/dev/null 2>&1
+    rustup default stable
+    if ! command -- cargo-install-update -h >/dev/null 2>&1; then
+      just install-rust-package cargo-update
+    else
+      true
+    fi
+    echo >&2 "*** ensuring all installed rust-based command line utilities, compiled with stable toolchain, have been updated to latest versions"
+    cargo-install-update install-update --all || true
+    rustup default nightly
+    echo >&2 "*** ensuring all installed rust-based command line utilities, compiled with nightly toolchain, have been updated to latest versions"
+    cargo-install-update install-update --all || true
+    rustup default stable
+
+# ─── BUILDS AND INSTALLS RUST PACKAGE FROM SOURCE ───────────────────────────────
+install-rust-package name:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if  ! command -- cargo --version > /dev/null 2>&1 ; then
+        echo >&2 "*** cannot install '{{ name }}' as rust toolchain has not been installed"
+        exit 1
+    else
+        true
+    fi
+
+    installed_packages=($(cargo install --list | /bin/grep ':' | awk '{print $1}'))
+    mkdir -p {{ justfile_directory() }}/tmp
+    rm -rf {{ justfile_directory() }}/tmp/rust-fail.txt
+    if [[ ! " ${installed_packages[@]} " =~ " {{ name }} " ]]; then
+        echo >&2 "***  building and installing '{{ name }}' from source ..."
+        cargo install --all-features '{{ name }}' || (echo '{{ name }}' >> {{ justfile_directory() }}/tmp/rust-fail.txt ; true)
+    else
+        echo >&2 "***  '{{ name }}' installation detected. Skipping build ..."
+    fi
+
+# ─── INSTALL RUST VENDOR DEPENDENCIES ───────────────────────────────────────────
+
+alias ird := install-rust-dependencies
+alias rust-dependencies := install-rust-dependencies
+
+install-rust-dependencies: update-rust
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring all required rust packages are installed"
+    RUST_PACKAGES="\
+      jsonfmt \
+      prose \
+      mdcat \
+      bat \
+      hyperfine \
+      bottom \
+      convco \
+    "
+    IFS=' ' read -a RUST_PACKAGES <<< "$RUST_PACKAGES" ;
+    if [ ${#RUST_PACKAGES[@]} -ne 0  ];then
+      for pkg in "${RUST_PACKAGES[@]}"; do
+        just install-rust-package "${pkg}"
+      done
+    fi
+
+# ─── INSTALLING HASHICORP TOOLS ─────────────────────────────────────────────────
+
+alias ihd := install-hashicorp-dependencies
+alias hashicorp-dependencies := install-hashicorp-dependencies
+
+install-hashicorp-dependencies:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just install-rust-package hcdl
+    IFS=':' read -a paths <<< "$(printenv PATH)" ;
+    [[ ! " ${paths[@]} " =~ " ${HOME}/.local/bin " ]] && export PATH="${PATH}:${HOME}/.local/bin" || true
+    [[ ! " ${paths[@]} " =~ " ${HOME}/.cargo/bin " ]] && export PATH="${PATH}:${HOME}/.cargo/bin" || true
+    HASHICORP_TOOLS="\
+    consul \
+    "
+    IFS=' ' read -a HASHICORP_TOOLS <<< "$HASHICORP_TOOLS" ;
+    if [ ${#HASHICORP_TOOLS[@]} -ne 0  ];then
+        for pkg in "${HASHICORP_TOOLS[@]}"; do
+            if  ! command -- "${pkg}" "--version"  > /dev/null 2>&1  ; then
+                curl -sL "https://api.github.com/repos/hashicorp/${pkg}/releases/latest" \
+                | jq -r '.name' \
+                | sed 's/v//g' \
+                | xargs -r \
+                hcdl "${pkg}" --build
+            else
+                echo >&2 "***  ${pkg} installation detected. skipping ..."
+            fi
+        done
+    else
+        true
+    fi
+
+# ─── INSTALLING DELTA ───────────────────────────────────────────────────────────
+
+alias igd := install-git-delta
+
+install-git-delta:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just install-rust-package git-delta
+    git config --global pager.diff delta
+    git config --global pager.log delta
+    git config --global pager.reflog delta
+    git config --global pager.show delta
+    git config --global interactive.difffilter "delta --color-only --features=interactive"
+    git config --global delta.features "decorations"
+    git config --global delta.interactive.keep-plus-minus-markers "false"
+    git config --global delta.decorations.commit-decoration-style "blue ol"
+    git config --global delta.decorations.commit-style "raw"
+    git config --global delta.decorations.file-style "omit"
+    git config --global delta.decorations.hunk-header-decoration-style "blue box"
+    git config --global delta.decorations.hunk-header-file-style "red"
+    git config --global delta.decorations.hunk-header-line-number-style "#067a00"
+    git config --global delta.decorations.hunk-header-style "file line-number syntax"
+
+# ─── BUILD LATEST NEOVIM FROM SOURCE ────────────────────────────────────────────
+
+_remove-neovim:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring all existing neovim installations are removed."
+    if command -- nvim --version > /dev/null 2>&1 ; then
+      command -- apt -h > /dev/null 2>&1 && ( sudo apt -yqq remove --purge neovim python3-neovim > /dev/null 2>&1 || true ) || true
+      command -- apt -h > /dev/null 2>&1 && ( sudo apt -yqq remove --purge python-neovim > /dev/null 2>&1 || true ) || true
+      command -- pacman --version > /dev/null 2>&1 && ( sudo pacman -Rcns --noconfirm neovim python-pynvim > /dev/null 2>&1 || true ) || true
+      command -- snap --version > /dev/null 2>&1 && ( sudo snap remove nvim > /dev/null 2>&1 || true ) || true
+      echo >&2 "*** all existing neovim installations have been removed."
+    fi
+
+build-neovim: _remove-neovim
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -- nvim --version > /dev/null 2>&1 ; then
+      echo >&2 "*** neovim installation found, skipping build from source."
+      exit 0
+    else
+      echo >&2 "*** downloading dependencies to build Neovim from source."
+      build_dependencies=(
+        "cmake"
+        "curl"
+        "unzip"
+      )
+      if command -- apt -h > /dev/null 2>&1 ; then
+        build_dependencies+=("ninja-build")
+        build_dependencies+=("gettext")
+        build_dependencies+=("libtool")
+        build_dependencies+=("libtool-bin")
+        build_dependencies+=("autoconf")
+        build_dependencies+=("automake")
+        build_dependencies+=("g++")
+        build_dependencies+=("pkg-config")
+      else
+        true
+      fi
+      if command -- pacman --version > /dev/null 2>&1 ; then
+        build_dependencies+=("base-devel")
+        build_dependencies+=("ninja")
+        build_dependencies+=("tree-sitter")
+      else
+        true
+      fi
+      if [ ${#build_dependencies[@]} -ne 0  ];then
+        for pkg in "${build_dependencies[@]}"; do
+          just install-os-package "${pkg}"
+        done
+      else
+        echo >&2 "*** no build dependencies found, skipping build."
+        exit 0
+      fi
+      echo >&2 "*** building neovim from source."
+      build_dir="/tmp/neovim"
+      sudo rm -rf "${build_dir}"
+      mkdir -p "${build_dir}"
+      git clone https://github.com/neovim/neovim.git "${build_dir}" ;
+      pushd "${build_dir}" > /dev/null 2>&1
+      make -j`nproc` CMAKE_BUILD_TYPE=RelWithDebInfo ;
+      CMAKE_EXTRA_FLAGS="-DCMAKE_INSTALL_PREFIX=/usr/local" sudo make -j`nproc` install ;
+      popd > /dev/null 2>&1
+      sudo rm -rf "${build_dir}"
+    fi
+
+# ─── INSTALL SPACEVIM ───────────────────────────────────────────────────────────
+
+alias is := install-spacevim
+
+install-spacevim:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -- $(which pip3) --version > /dev/null 2>&1 ; then
+      echo >&2 "*** ensuring all existing neovim related python packages are removed."
+      $(which python3) -m pip uninstall -yq neovim pynvim msgpack greenlet >/dev/null 2>&1  || true
+    else
+      echo >&2 "*** skipping Python package clean-ups as Python3 and Pip3 were not installed."
+      true
+    fi
+    if command -- $(which yarn) --version > /dev/null 2>&1 ; then
+      sudo $(which yarn) global remove neovim  >/dev/null 2>&1  || true
+    else
+      echo >&2 "*** skipping NodeJs package clean-ups as Yarn was not installed."
+    fi
+    echo >&2 "*** cleaning up neovim leftover directories."
+    just install-python-package neovim
+    sudo npm -g install neovim
+    rm -rf \
+        ~/.SpaceVim \
+        ~/.vim* \
+        ~/.config/*vim* \
+        ~/.cache/*vim* \
+        ~/.cache/neosnippet \
+        ~/.local/share/*vim*
+    curl -sLf https://spacevim.org/install.sh | bash
+    sed -i.bak 's/call dein#add/"call dein#add/g' "$HOME/.SpaceVim/autoload/SpaceVim/plugins.vim"
+    mkdir -p "$HOME/.local/share/nvim/shada"
+    sudo npm -g install neovim
+    python3 -m pip install --user notedown
+    nvim --headless \
+    -c "call dein#direct_install('deoplete-plugins/deoplete-go', { 'build': 'make' })" \
+    -c "call dein#direct_install('iamcco/markdown-preview.nvim', {'on_ft': ['markdown', 'pandoc.markdown', 'rmd'],'build': 'yarn --cwd app --frozen-lockfile install' })" \
+    -c "call dein#direct_install('lymslive/vimloo', { 'merged': '0' })" \
+    -c "call dein#direct_install('lymslive/vnote', { 'depends': 'vimloo' })" \
+    -c "qall"
+    if [ -r "$HOME/.cache/vimfiles/repos/github.com/zchee/deoplete-go/rplugin/python3/deoplete/sources/deoplete_go.py" ]; then
+    sed -i \
+        -e '/def gather_candidates/a\        return []' \
+        -e '/def get_complete_result/a\        return []' \
+        -e '/def find_gocode_binary/a\        return "/bin/true"' \
+    "$HOME/.cache/vimfiles/repos/github.com/zchee/deoplete-go/rplugin/python3/deoplete/sources/deoplete_go.py"
+    echo 'finish' >  "$HOME/.cache/vimfiles/repos/github.com/zchee/deoplete-go/plugin/deoplete-go.vim"
+    fi
+    mv "$HOME/.SpaceVim/autoload/SpaceVim/plugins.vim.bak" "$HOME/.SpaceVim/autoload/SpaceVim/plugins.vim"
+    nvim --headless \
+      -c "call dein#install()" \
+      -c "call dein#update()" \
+      -c "call dein#remote_plugins()" \
+      -c "call dein#recache_runtimepath()" \
+      -c "UpdateRemotePlugins" \
+      -c "qall" ; \
+    [ -d "${HOME}/.SpaceVim/bundle/vimproc.vim" ] && make -C ~/.SpaceVim/bundle/vimproc.vim ;
+    if command -- go version > /dev/null 2>&1 ; then
+        nvim --headless \
+        -c "GoInstallBinaries" \
+        -c "GoUpdateBinaries" \
+        -c "qall" || true
+    fi
+
+# ─── RUN ALL AVAILABLE DEPENDENCY RELATED TARGETS ───────────────────────────────
 
 alias d := dependencies
 
-dependencies: format-just
+dependencies: bootstrap-core install-nodejs-dependencies install-python-dependencies install-rust-dependencies
     #!/usr/bin/env bash
     set -euo pipefail
-    if command -- sudo pip3 -h > /dev/null 2>&1 ; then
-      if ! command -- pre-commit -h > /dev/null 2>&1 ; then
-        python3 -m pip install --user pre-commit
-      fi
-    fi
-    if command -- cargo -h > /dev/null 2>&1 ; then
-      if ! command -- convco -h > /dev/null 2>&1 ; then
-        cargo install --locked --all-features -j `nproc` convco
-      fi
-      if ! command -- jsonfmt -h > /dev/null 2>&1 ; then
-        cargo install --locked --all-features -j `nproc` jsonfmt
-      fi
-    fi
-    if [ ! -d "$HOME/.SpaceVim" ] ; then
-      curl -sLf https://spacevim.org/install.sh | bash
-    fi
-    if command -- sudo $(which node) $(which yarn) --help > /dev/null 2>&1 ; then
-      NODE_PACKAGES="\
-      remark \
-      remark-cli \
-      remark-stringify \
-      remark-frontmatter \
-      wcwidth \
-      prettier \
-      bash-language-server \
-      dockerfile-language-server-nodejs \
-      standard-readme-spec \
-      "
-      IFS=' ' read -a NODE_PACKAGES <<< "$NODE_PACKAGES" ;
-      installed=()
-      if command -- jq -h > /dev/null 2>&1 && [ -r $(sudo $(which node) $(which yarn) global dir)/package.json ] ; then
-        while IFS='' read -r line; do
-          installed+=("$line");
-        done < <(cat  $(sudo $(which node) $(which yarn) global dir)/package.json  | jq -r '.dependencies|keys[]')
-      fi
-      intersection=($(comm -12 <(for X in "${NODE_PACKAGES[@]}"; do echo "${X}"; done|sort)  <(for X in "${installed[@]}"; do echo "${X}"; done|sort)))
-      to_install=($(echo ${intersection[*]} ${NODE_PACKAGES[*]} | sed 's/ /\n/g' | sort -n | uniq -u | paste -sd " " - ))
-      if [ ${#to_install[@]} -ne 0  ];then
-        sudo $(which node) $(which yarn) global add --prefix /usr/local ${to_install[@]}
-      fi
-    fi
+    just install-git-delta
+    just install-hashicorp-dependencies
+    just build-neovim
+    just install-spacevim
 
 # ────────────────────────────────────────────────────────────────────────────────
 
 alias gb := go-bootstrap
 
-go-bootstrap: format-just
+go-bootstrap:
     go env -w "GO111MODULE=on"
     go env -w "CGO_ENABLED=0"
     go env -w "CGO_LDFLAGS=-s -w -extldflags '-static'"
@@ -82,7 +828,7 @@ go-bootstrap: format-just
 
 alias kc := kary-comments
 
-kary-comments: format-just
+kary-comments:
     #!/usr/bin/env bash
     set -euo pipefail
     sed -i.bak \
@@ -126,7 +872,7 @@ format: format-json format-just format-go
 alias fj := format-json
 alias json-fmt := format-json
 
-format-json: format-just
+format-json:
     #!/usr/bin/env bash
     set -euo pipefail
     if command -- jsonfmt -h > /dev/null 2>&1 ; then
@@ -143,7 +889,7 @@ alias go-fmt := format-go
 alias gofmt := format-go
 alias fg := format-go
 
-format-go: format-just
+format-go:
     #!/usr/bin/env bash
     set -euo pipefail
     gofmt -l -w {{ justfile_directory() }}
@@ -184,7 +930,7 @@ PATCH_VERSION := `[[ ! -z $(git tag -l | head -n 1 ) ]] && convco version --patc
 
 alias pc := pre-commit
 
-pre-commit: format-just
+pre-commit:
     #!/usr/bin/env bash
     set -euo pipefail
     pushd "{{ justfile_directory() }}" > /dev/null 2>&1
@@ -512,7 +1258,7 @@ lxc-launch name:
     lxc launch \
     --profile="default" \
     --profile="{{ project_name }}-debian" \
-    images:debian/buster/cloud \
+    images:debian/bullseye/cloud \
     "{{ name }}" 2>/dev/null \
     || lxc start "{{ name }}" 2>/dev/null
     just lxc-wait "{{ name }}"
@@ -702,7 +1448,7 @@ gitpod-ssh-config: gitpod-ssh-pub-key
 
 alias vug := vagrant-up-gcloud
 
-vagrant-up-gcloud: format-just
+vagrant-up-gcloud:
     #!/usr/bin/env bash
     set -euo pipefail
     export NAME="$(basename "{{ justfile_directory() }}")" ;
@@ -749,7 +1495,7 @@ vagrant-up-gcloud: format-just
 
 alias vdg := vagrant-down-gcloud
 
-vagrant-down-gcloud: format-just
+vagrant-down-gcloud:
     #!/usr/bin/env bash
     set -euo pipefail ;
     vagrant destroy -f || true ;
