@@ -507,7 +507,7 @@ lxc-profile *path: _docker-pull-renderer ssh-key
 
 lxc-launch name:
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -xeuo pipefail
     echo >&2 "*** ensuring '{{ name }}' LXD container has started" ;
     lxc launch \
     --profile="default" \
@@ -544,6 +544,7 @@ lxc-tail-logs *name:
 # ─── QUICK CREATION OF A SINGLE SANDBOX NODE ────────────────────────────────────
 
 alias sandbox := lxc-sandbox
+alias devcontainer := lxc-sandbox
 
 lxc-sandbox *name: lxc-profile
     #!/usr/bin/env bash
@@ -552,89 +553,50 @@ lxc-sandbox *name: lxc-profile
     [ ! -z '{{ name }}' ] && name='{{ name }}' || true
     just lxc-launch "${name}"
 
-# ─── BRING UP CONTAINER SETS FOR ALL SUBPROJECTS ────────────────────────────────
-# [ NOTE ] this target uses GNU's parallel and can increase memory
+# ─── TEARDOWN LXC NODES ─────────────────────────────────────────────────────────
 
-# pressure drastically.
-countainers-all:
+alias tl := teardown-lxc
+alias lxc-clean := teardown-lxc
+alias lc := teardown-lxc
+
+teardown-lxc *name:
     #!/usr/bin/env bash
     set -euo pipefail
-    export LANGUAGE="C"
-    export LC_ALL="C"
-    export LANG="C"
-    export DEBIAN_FRONTEND=noninteractive
-    parallel \
-        -j$(nproc) \
-        --no-run-if-empty \
-        --load 100% \
-    -- \
-        'seq -s = 30 |tr -d "[:digit:]";' \
-        'echo -e "Job {#}";' \
-        'seq -s - 30 |tr -d "[:digit:]";' \
-        'lxc launch \
-            --profile="default" \
-            --profile="{{ project_name }}-debian" \
-            images:debian/buster/cloud "{1}-{2}" 2>/dev/null \
-            || lxc start "{1}-{2}" 2>/dev/null \
-            || true;' \
-        'echo >&2 "*** waiting for cloud-init to finish initial provisioning of '\''{1}-{2}'\'' LXD container";' \
-        'lxc exec "{1}-{2}" -- cloud-init status --wait;' \
-    ::: $(find '{{ justfile_directory() }}/playbooks' \
-        -mindepth 1 \
-        -maxdepth 1 \
-        -type d \
-        -exec basename {} \;) \
-    ::: $(seq 1 1 ${CONTAINER_COUNT})
-    just hosts-config
-    just ssh-config
-
-# ─── BRING UP A BARELY PROVISIONED LXC NODE ─────────────────────────────────────
-
-containers *name:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just lxc-profile
-    export DEBIAN_FRONTEND=noninteractive
     if [ -z '{{ name }}' ]; then
-        for i in {1..5}; do just countainers-all && break || sleep 5; done ;
+        set -euo pipefail
+        readarray -t containers < <(lxc list --format json 2>/dev/null | jq -c '
+        [
+            .[]
+            | select(.profiles | contains(["{{ project_name }}"]))
+            |{
+                name:.name,
+            }
+        ]
+        ' | jq -r '.[] | @base64')
     else
-        export LANGUAGE="C"
-        export LC_ALL="C"
-        export LANG="C"
-        if [ -d {{ justfile_directory() }}/playbooks/{{ name }} ]; then
-          local_justfile=$(find {{ justfile_directory() }}/playbooks/{{ name }} -maxdepth 1 -iname '*justfile*' | head -n 1)
-          if [ ! -z "${local_justfile}" ]; then
-              target_name="$(basename "$0")"
-              IFS=' ' read -a local_targets <<< "$(
-                just \
-                  --summary \
-                  --working-directory {{ justfile_directory() }}/playbooks/{{ name }} \
-                  --justfile $local_justfile \
-                  --color never)"
-              echo "${local_targets[@]}"
-              if [[ " ${local_targets[@]} " =~ " ${target_name} " ]]; then
-                  just -d {{ justfile_directory() }}/playbooks/{{ name }} --justfile $local_justfile "${target_name}"
-              else
-                  echo >&2 "*** '$target_name' target not found in  '{{ name }}' local Justfile"
-              fi
-          else
-            parallel \
-              -j$(nproc) \
-              --no-run-if-empty \
-              --bar \
-              --load 100% \
-              -- \
-              'set -x;' \
-              'seq -s = 30 |tr -d "[:digit:]";' \
-              'echo -e "Job {#}";' \
-              'seq -s - 30 |tr -d "[:digit:]";' \
-              'just lxc-launch "{{ name }}-{1}" ;' \
-              ::: $(seq 1 1 ${CONTAINER_COUNT})
-          fi
-        else
-          echo >&2 "*** sub-project directory not found : {{ justfile_directory() }}/playbooks/{{ name }}'"
-        fi
+        readarray -t containers < <(lxc list --format json 2>/dev/null | jq -c '
+        [
+            .[]
+            | select(.name | contains("{{ name }}"))
+            |{
+                name:.name,
+            }
+        ]
+        ' | jq -r '.[] | @base64')
     fi
+    for container in "${containers[@]}"; do
+        _jq() {
+            echo "${container}" | base64 --decode | jq -r "${1}"
+        }
+        name="$(_jq '.name')"
+        echo >&2 "*** removing '${name}' container";
+        lxc delete -f "${name}" 2>/dev/null
+        echo >&2 "*** removing '${name}' entry from /etc/hosts"
+        [ -r /etc/hosts ] && sudo sed -i "/${name}/d" /etc/hosts 2>/dev/null || true
+        echo >&2 "*** removing '${name}' SSH config"
+        [ -r $HOME/.ssh/config ] &&  sed -n -i "/${name}/,/UserKnownHostsFile/!{//!p}" ~/.ssh/config || true
+    done
+    lxc profile delete "{{ project_name }}-debian" > /dev/null 2>&1 || true
 
 # ─── GITPOD ─────────────────────────────────────────────────────────────────────
 
