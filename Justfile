@@ -4,6 +4,7 @@
 set positional-arguments := true
 set dotenv-load := true
 set shell := ["/bin/bash", "-o", "pipefail", "-c"]
+
 project_name := `basename $PWD`
 
 default: format-just
@@ -342,6 +343,298 @@ build-docker-image:
     set -euo pipefail
     bash contrib/docker/alpine/build.sh
 
+#
+# ────────────────────────────────────────────────────────────── I ──────────
+#   :::::: L X C   H E L P E R S : :  :   :    :     :        :          :
+# ────────────────────────────────────────────────────────────────────────
+#
+# ─── ENSURE PROJECT SPECIFIC SSH KEYS ARE PRESENT ───────────────────────────────
+
+alias sk := ssh-key
+
+ssh-key:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring a set of ssh keys for '{{ project_name }}' project has been generated on host" ;
+    [ ! -r ~/.ssh/id_rsa ] \
+    && (
+        echo >&2 "*** generating default ssh key-pair'" ;
+        ssh-keygen \
+        -b 4096 \
+        -t rsa \
+        -f ~/.ssh/id_rsa -q -N "" ;
+        ) \
+    || true ;
+
+# ─── PULL TEMPLATE RENDERER TOOL ────────────────────────────────────────────────
+
+_docker-pull-renderer:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker pull hairyhenderson/gomplate > /dev/null 2>&1
+
+# ─── RENDER TEMPLATED LXD PROFILE ───────────────────────────────────────────────
+
+alias lrp := lxc-render-profile
+
+lxc-render-profile: _docker-pull-renderer
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker run \
+        --env "USER=$USER" \
+        --env "PASSWD=$(openssl passwd -1 -salt SaltSalt '$USER' )" \
+        --env "profile={{ project_name }}" \
+        -w "/workspace" \
+        -v "$PWD:/workspace" \
+        -v "${HOME}/.ssh/id_rsa.pub:/id_rsa.pub:ro" \
+        --rm -it hairyhenderson/gomplate \
+        --file /workspace/contrib/lxd/debian.yml.tmpl
+
+# ─── UPDATE LOCAL MACHINE SSH CONFIG ────────────────────────────────────────────
+
+alias sc := ssh-config
+
+ssh-config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    readarray -t containers < <(lxc list --format json 2>/dev/null | jq -c '
+    [
+        .[]
+        | select(
+            (
+                (.status=="Running")
+                and (.profiles | contains(["{{ project_name }}"]))
+            )
+        ) | {
+        name:.name,
+        addr:.state.network.eth0.addresses[]|select(.family=="inet").address
+        }
+    ]
+    ' | jq -r '.[] | @base64')
+    for container in "${containers[@]}"; do
+        _jq() {
+            echo "${container}" | base64 --decode | jq -r "${1}"
+        }
+        name="$(_jq '.name')"
+        addr="$(_jq '.addr')"
+        echo >&2 "*** removing existing '${name}' config from ~/.ssh/config"
+        [ -r $HOME/.ssh/config ] \
+            && sed -n -i \
+                -e "/Host ${name}/,/UserKnownHostsFile/!{//!p}" \
+            ~/.ssh/config \
+        || true
+        echo >&2 "*** storing ssh config for '${name}' in ~/.ssh/config"
+        echo '' >> ~/.ssh/config
+        cat << CONFIG | tee -a ~/.ssh/config > /dev/null
+    Host ${name}
+      user $(whoami)
+      HostName ${addr}
+      RequestTTY yes
+      IdentityFile ~/.ssh/id_rsa
+      IdentitiesOnly yes
+      StrictHostKeyChecking no
+      CheckHostIP no
+      MACs hmac-sha2-256
+      UserKnownHostsFile=/dev/null
+    CONFIG
+        sed -i -e "/^\s*$/d" ~/.ssh/config
+        echo '' >> ~/.ssh/config
+    done
+
+# ─── UPDATE LOCAL MACHINE HOSTS ─────────────────────────────────────────────────
+
+alias hc := hosts-config
+
+hosts-config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** removing existing .local domains from /etc/hosts"
+    [ -r /etc/hosts ] && sudo sed -i "/\.local/d" /etc/hosts || true
+    readarray -t containers < <(lxc list --format json 2>/dev/null | jq -c '
+    [
+        .[]
+        | select(
+            (
+                (.status=="Running")
+                and (.profiles | contains(["{{ project_name }}"]))
+            )
+        ) | {
+        name:.name,
+        addr:.state.network.eth0.addresses[]|select(.family=="inet").address
+        }
+    ]
+    ' | jq -r '.[] | @base64')
+    for container in "${containers[@]}"; do
+        _jq() {
+            echo "${container}" | base64 --decode | jq -r "${1}"
+        }
+        name="$(_jq '.name')"
+        addr="$(_jq '.addr')"
+        echo >&2 "*** updating /etc/hosts for '${name}'"
+        echo "$addr  ${name}.local" | sudo tee -a /etc/hosts
+        if command -- hostname -h >/dev/null 2>&1; then
+          echo "$addr  ${name}.$(hostname).local" | sudo tee -a /etc/hosts
+        else
+          true ;
+        fi
+    done
+
+# ─── UPDATE LXC PROFILE ─────────────────────────────────────────────────────────
+
+alias lp := lxc-profile
+
+lxc-profile *path: _docker-pull-renderer ssh-key
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [ -z '{{ path }}' ] && path='contrib/lxd/debian.yml.tmpl' || path='{{ path }}'
+
+    echo >&2 "*** ensuring '{{ project_name }}-debian' LXD profile exists" ;
+    ! lxc profile show "{{ project_name }}-debian" > /dev/null 2>&1 \
+    && lxc profile create "{{ project_name }}-debian" 2>/dev/null
+    echo >&2 "*** ensuring '{{ project_name }}-debian' LXD profile matches our requirements" ;
+    docker run \
+        --env "USER=$USER" \
+        --env "PASSWD=$(openssl passwd -1 -salt SaltSalt '$USER' )" \
+        --env "profile={{ project_name }}" \
+        -w "/workspace" \
+        -v "$PWD:/workspace" \
+        -v "${HOME}/.ssh/id_rsa.pub:/id_rsa.pub:ro" \
+        --rm -i hairyhenderson/gomplate \
+        --file "/workspace/${path}" \
+    | lxc profile edit "{{ project_name }}-debian" 2>/dev/null
+
+# ─── START A CONTAINER ──────────────────────────────────────────────────────────
+
+lxc-launch name:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** ensuring '{{ name }}' LXD container has started" ;
+    lxc launch \
+    --profile="default" \
+    --profile="{{ project_name }}-debian" \
+    images:debian/buster/cloud \
+    "{{ name }}" 2>/dev/null \
+    || lxc start "{{ name }}" 2>/dev/null
+    just lxc-wait "{{ name }}"
+    just ssh-config
+    just hosts-config
+    echo >&2 "*** testing SSH access to '{{ name }}'.  ... "
+    export LC_ALL=C ;
+    ssh "{{ name }}" -- echo '*** $(whoami)@$(hostname) can be accessed through ssh...'
+
+# ─── WAIT UNTIL PROVISIONING HAS BEEN COMPLETED ─────────────────────────────────
+lxc-wait name:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo >&2 "*** waiting for cloud-init to finish initial provisioning of '{{ name }}' LXD container" ;
+    lxc exec "{{ name }}" -- cloud-init status --wait
+
+# ─── TAIL CLOUD INIT LOGS ───────────────────────────────────────────────────────
+
+alias tail := lxc-tail-logs
+alias logs := lxc-tail-logs
+
+lxc-tail-logs *name:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    name='{{ project_name }}'
+    [ ! -z '{{ name }}' ] && name='{{ name }}' || true
+    lxc exec "${name}" -- tail -f /var/log/cloud-init-output.log
+
+# ─── QUICK CREATION OF A SINGLE SANDBOX NODE ────────────────────────────────────
+
+alias sandbox := lxc-sandbox
+
+lxc-sandbox *name: lxc-profile
+    #!/usr/bin/env bash
+    set -euo pipefail
+    name='{{ project_name }}'
+    [ ! -z '{{ name }}' ] && name='{{ name }}' || true
+    just lxc-launch "${name}"
+
+# ─── BRING UP CONTAINER SETS FOR ALL SUBPROJECTS ────────────────────────────────
+# [ NOTE ] this target uses GNU's parallel and can increase memory
+
+# pressure drastically.
+countainers-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export LANGUAGE="C"
+    export LC_ALL="C"
+    export LANG="C"
+    export DEBIAN_FRONTEND=noninteractive
+    parallel \
+        -j$(nproc) \
+        --no-run-if-empty \
+        --load 100% \
+    -- \
+        'seq -s = 30 |tr -d "[:digit:]";' \
+        'echo -e "Job {#}";' \
+        'seq -s - 30 |tr -d "[:digit:]";' \
+        'lxc launch \
+            --profile="default" \
+            --profile="{{ project_name }}-debian" \
+            images:debian/buster/cloud "{1}-{2}" 2>/dev/null \
+            || lxc start "{1}-{2}" 2>/dev/null \
+            || true;' \
+        'echo >&2 "*** waiting for cloud-init to finish initial provisioning of '\''{1}-{2}'\'' LXD container";' \
+        'lxc exec "{1}-{2}" -- cloud-init status --wait;' \
+    ::: $(find '{{ justfile_directory() }}/playbooks' \
+        -mindepth 1 \
+        -maxdepth 1 \
+        -type d \
+        -exec basename {} \;) \
+    ::: $(seq 1 1 ${CONTAINER_COUNT})
+    just hosts-config
+    just ssh-config
+
+# ─── BRING UP A BARELY PROVISIONED LXC NODE ─────────────────────────────────────
+
+containers *name:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just lxc-profile
+    export DEBIAN_FRONTEND=noninteractive
+    if [ -z '{{ name }}' ]; then
+        for i in {1..5}; do just countainers-all && break || sleep 5; done ;
+    else
+        export LANGUAGE="C"
+        export LC_ALL="C"
+        export LANG="C"
+        if [ -d {{ justfile_directory() }}/playbooks/{{ name }} ]; then
+          local_justfile=$(find {{ justfile_directory() }}/playbooks/{{ name }} -maxdepth 1 -iname '*justfile*' | head -n 1)
+          if [ ! -z "${local_justfile}" ]; then
+              target_name="$(basename "$0")"
+              IFS=' ' read -a local_targets <<< "$(
+                just \
+                  --summary \
+                  --working-directory {{ justfile_directory() }}/playbooks/{{ name }} \
+                  --justfile $local_justfile \
+                  --color never)"
+              echo "${local_targets[@]}"
+              if [[ " ${local_targets[@]} " =~ " ${target_name} " ]]; then
+                  just -d {{ justfile_directory() }}/playbooks/{{ name }} --justfile $local_justfile "${target_name}"
+              else
+                  echo >&2 "*** '$target_name' target not found in  '{{ name }}' local Justfile"
+              fi
+          else
+            parallel \
+              -j$(nproc) \
+              --no-run-if-empty \
+              --bar \
+              --load 100% \
+              -- \
+              'set -x;' \
+              'seq -s = 30 |tr -d "[:digit:]";' \
+              'echo -e "Job {#}";' \
+              'seq -s - 30 |tr -d "[:digit:]";' \
+              'just lxc-launch "{{ name }}-{1}" ;' \
+              ::: $(seq 1 1 ${CONTAINER_COUNT})
+          fi
+        else
+          echo >&2 "*** sub-project directory not found : {{ justfile_directory() }}/playbooks/{{ name }}'"
+        fi
+    fi
 
 # ─── GITPOD ─────────────────────────────────────────────────────────────────────
 
