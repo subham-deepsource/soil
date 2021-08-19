@@ -3,13 +3,14 @@ package provision
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	"github.com/akaspin/logx"
 	"github.com/akaspin/supervisor"
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/da-moon/soil/agent/allocation"
 	"github.com/da-moon/soil/agent/bus"
 	"github.com/da-moon/soil/manifest"
-	"sync"
 )
 
 type EvaluatorConfig struct {
@@ -142,7 +143,7 @@ func (e *Evaluator) executeEvaluation(evaluation *Evaluation) {
 
 	next := e.state.Commit(evaluation.Name())
 	e.fanOut(next)
-	return
+
 }
 
 func (e *Evaluator) executePhase(phase []Instruction, conn *dbus.Conn) (failures []error) {

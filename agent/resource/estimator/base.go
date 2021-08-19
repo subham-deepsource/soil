@@ -2,11 +2,12 @@ package estimator
 
 import (
 	"context"
+
 	"github.com/akaspin/logx"
 	"github.com/da-moon/soil/agent/allocation"
 	"github.com/da-moon/soil/agent/bus"
 	"github.com/da-moon/soil/manifest"
-	"github.com/nu7hatch/gouuid"
+	uuid "github.com/nu7hatch/gouuid"
 )
 
 const (
@@ -125,7 +126,7 @@ func (b *base) Destroy(id string) (err error) {
 
 func (b *base) Shutdown() {
 	close(b.shutdownChan)
-	return
+
 }
 
 func (b *base) send(id string, failure error, values manifest.FlatMap) {

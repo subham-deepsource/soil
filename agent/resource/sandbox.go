@@ -2,6 +2,7 @@ package resource
 
 import (
 	"context"
+
 	"github.com/akaspin/logx"
 	"github.com/da-moon/soil/agent/allocation"
 	"github.com/da-moon/soil/agent/bus"
@@ -93,7 +94,7 @@ func (s *Sandbox) Create(id string, req *allocation.Resource) {
 			s.log.Tracef(`create sent: %s:%v`, id, req)
 		}
 	}()
-	return
+
 }
 
 func (s *Sandbox) Update(id string, req *allocation.Resource) {
@@ -110,7 +111,7 @@ func (s *Sandbox) Update(id string, req *allocation.Resource) {
 			s.log.Tracef(`update sent: %s:%v`, id, req)
 		}
 	}()
-	return
+
 }
 
 func (s *Sandbox) Destroy(id string) {
@@ -126,7 +127,7 @@ func (s *Sandbox) Destroy(id string) {
 			s.log.Tracef(`destroy sent: %s`, id)
 		}
 	}()
-	return
+
 }
 
 // Destroy all resources in sandbox and notify upstream and downstream

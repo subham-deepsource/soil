@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+
 	"github.com/akaspin/logx"
 	"github.com/akaspin/supervisor"
 	"github.com/da-moon/soil/agent/allocation"
@@ -92,5 +93,5 @@ func (s *Sink) submitToEvaluators(id string, pod *manifest.Pod) {
 			})
 		}(me, pod)
 	}
-	return
+
 }
