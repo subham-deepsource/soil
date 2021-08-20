@@ -188,7 +188,7 @@ func SomeFloat(s []float64, f func(float64) bool) bool {
 }
 
 // Index returns the index of an element in a slice or -1 if not found
-func Index(s interface{}, t interface{}) int {
+func Index(s, t interface{}) int {
 	// Retrieve slices
 	sl := reflect.ValueOf(s).Elem()
 	if sl.Len() == 0 {
@@ -313,7 +313,7 @@ func EqSlices(a, b interface{}) bool {
 // InSlice returns a boolean if the value is in the slice
 // v = value to find
 // s = slice
-func InSlice(v interface{}, s interface{}) bool {
+func InSlice(v, s interface{}) bool {
 	// Check if is passed as pointer
 	valueOf := reflect.ValueOf(s)
 	if valueOf.Kind() != reflect.Ptr {

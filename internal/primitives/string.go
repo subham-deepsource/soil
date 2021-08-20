@@ -26,7 +26,7 @@ import (
 var camelingRegex = regexp.MustCompile("[0-9A-Za-z]+")
 
 // HasPrefix ...
-func HasPrefix(s string, prefix string) bool {
+func HasPrefix(s, prefix string) bool {
 	if runtime.GOOS == "windows" {
 		return strings.HasPrefix(strings.ToLower(s), strings.ToLower(prefix))
 	}
@@ -34,7 +34,7 @@ func HasPrefix(s string, prefix string) bool {
 }
 
 // HasSuffix ...
-func HasSuffix(s string, suffix string) bool {
+func HasSuffix(s, suffix string) bool {
 	if runtime.GOOS == "windows" {
 		return strings.HasSuffix(strings.ToLower(s), strings.ToLower(suffix))
 	}
@@ -42,7 +42,7 @@ func HasSuffix(s string, suffix string) bool {
 }
 
 // IsStringEqual ...
-func IsStringEqual(s1 string, s2 string) bool {
+func IsStringEqual(s1, s2 string) bool {
 	if runtime.GOOS == "windows" {
 		return strings.EqualFold(s1, s2)
 	}
