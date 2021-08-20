@@ -10,7 +10,7 @@ func NormalizeKey(v ...string) (res string) {
 	return
 }
 
-func TrimKeyPrefix(prefix string, key string) (res string) {
+func TrimKeyPrefix(prefix, key string) (res string) {
 	res = NormalizeKey(strings.TrimPrefix(key, prefix))
 	return
 }
